@@ -18,7 +18,7 @@ public class CorsConfig {
         config.setAllowedOrigins(List.of(
                 "http://localhost:5173",      // React local
                 "http://127.0.0.1:3000",
-                "https://separate-ringtone-missed-using.trycloudflare.com"
+                "https://marketplace-frontend-4mvs.vercel.app"
         ));
 
         // Cho phép các method cần thiết
