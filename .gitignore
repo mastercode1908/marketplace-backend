@@ -1,0 +1,98 @@
+# =========================
+# 🌱 BASE SPRING BOOT / MAVEN
+# =========================
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Maven wrapper files
+.mvn/wrapper/maven-wrapper.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Compiled class files
+*.class
+*.war
+*.jar
+*.ear
+
+# Logs & temporary files
+*.log
+*.tmp
+*.swp
+*.bak
+*.DS_Store
+*.idea_modules/
+*.orig
+hs_err_pid*
+
+# =========================
+# 💻 IDE SPECIFIC
+# =========================
+
+## IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+## Eclipse / Spring Tool Suite (STS)
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+
+## NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+## VS Code
+.vscode/
+
+# =========================
+# 🐳 DOCKER / DEPLOY
+# =========================
+/docker-compose.override.yml
+/docker-data/
+.env
+.env.*
+*.pid
+*.seed
+*.tar
+
+# =========================
+# 🧪 TESTS / COVERAGE
+# =========================
+/test-output/
+/surefire-reports/
+/jacoco.exec
+/jacoco-report/
+/target/site/
+
+# =========================
+# 🗂️ MISC
+# =========================
+/out/
+/bin/
+/generated/
+/logs/
+/tmp/
+/node_modules/
+
+# =========================
+# 🚀 CUSTOM (project-specific)
+# =========================
+/uploads/
+/storage/
+/files/
+/screenshots/
