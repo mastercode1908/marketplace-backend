@@ -27,7 +27,9 @@ public class BannerResponse {
     private Instant startDate;
     private Instant endDate;
     private BannerStatus status;
+    private String rejectionReason;
     private Instant createdAt;
     private Instant updatedAt;
+    private Instant deletedAt;
 }
 
