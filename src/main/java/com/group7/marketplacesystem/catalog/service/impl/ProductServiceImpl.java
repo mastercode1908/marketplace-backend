@@ -177,7 +177,7 @@ public class ProductServiceImpl implements ProductService {
             return productRepository.findAll()
                     .stream()
                     .filter(product -> product.getDeletedAt() == null)
-                    .filter(product -> !"Inactive".equalsIgnoreCase(product.getProductStatus()))
+                    // Removed filter for Inactive products to show them in ALL tab
                     .map(productMapper::toProductDetailResponse)
                     .toList();
         }

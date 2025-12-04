@@ -14,6 +14,7 @@ public enum ErrorCode {
     UNAUTHORIZED(1002, "You do not have permission", HttpStatus.FORBIDDEN),
     DATABASE_CONSTRAINT_VIOLATION(1003, "Database constraint violation", HttpStatus.CONFLICT),
     BAD_REQUEST(1004, "Bad request", HttpStatus.BAD_REQUEST),
+    CART_EMPTY(1005, "Giỏ hàng đang trống", HttpStatus.BAD_REQUEST),
 
 
 
@@ -48,6 +49,8 @@ public enum ErrorCode {
     GHN_SHOP_NOT_FOUND(3018, "The shop with this Shop ID was not found in GHN. Please check your Token and Shop ID again.", HttpStatus.BAD_REQUEST),
     GHN_TOKEN_INVALID(3019, "GHN Token is invalid or does not have access. Please check Token again.", HttpStatus.BAD_REQUEST),
     ORDER_DETAIL_NOT_FOUND(3030, "Order Detail not found", HttpStatus.NOT_FOUND),
+    PRODUCT_IS_DELETE(3031, "Sản phẩm đã bị xóa", HttpStatus.BAD_REQUEST),
+    PROMOTION_IS_DELETE(3032, "Phiếu giảm giá đã bị xóa", HttpStatus.BAD_REQUEST),
 
     FLASHSALE_NOT_FOUND(3009, "Flash sale not found", HttpStatus.NOT_FOUND),
     NOTIFICATION_NOT_FOUND(3010, "Notification not found", HttpStatus.NOT_FOUND),

@@ -33,6 +33,7 @@ public interface BannerRepository extends JpaRepository<Banner, Integer> {
     Page<Banner> findByStatusOrderByCreatedAtDesc(Banner.BannerStatus status, Pageable pageable);
 
 
+    @Query("SELECT b FROM Banner b WHERE b.deletedAt IS NULL ORDER BY b.createdAt DESC")
     Page<Banner> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     Page<Banner> findByDeletedAtIsNullOrderByCreatedAtDesc(Pageable pageable);
