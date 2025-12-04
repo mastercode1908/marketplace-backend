@@ -1,5 +1,6 @@
 package com.group7.marketplacesystem.common.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -10,18 +11,17 @@ import java.util.List;
 
 @Configuration
 public class CorsConfig {
+
+    @Value("${app.frontend.url}")
+    private String frontendUrls; // ví dụ: "http://localhost:5173,http://127.0.0.1:3000,https://mydomain.com"
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
         // 🔓 Cho phép frontend gọi API
         config.setAllowedOrigins(List.of(
-                "http://localhost:5173",      // React local
-                "http://127.0.0.1:3000",
-                "https://registry-kick-echo-lower.trycloudflare.com",
-                "https://marketplace-frontend-4mvs.vercel.app",
-                "https://marketplace-frontend-4mvs-git-main-mastercode1908s-projects.vercel.app",
-                "https://marketplace-frontend-4mvs-8gr42a2kx-mastercode1908s-projects.vercel.app"
+                frontendUrls
         ));
 
         // Cho phép các method cần thiết

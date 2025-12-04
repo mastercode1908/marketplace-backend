@@ -102,7 +102,7 @@ public class MailServiceImpl implements MailService {
         String subject = "Có báo cáo sản phẩm mới";
 
         // Link điều hướng vào trang quản lý report
-        String manageReportLink = "http://localhost:5173/content-admin/reports";
+        String manageReportLink = frontendUrl + "/content-admin/reports";
 
         String content = """
             Xin chào Admin,

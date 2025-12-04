@@ -5,6 +5,7 @@ import com.group7.marketplacesystem.identity.dto.response.AuthResponse;
 import com.group7.marketplacesystem.identity.service.IGoogleOAuthService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 
 import org.springframework.http.ResponseCookie;
@@ -26,6 +27,8 @@ public class GoogleAuthController {
 
     private final IGoogleOAuthService googleOAuthService;
 
+    @Value("${app.frontend.url}") // link frontend mặc định
+    private String frontendUrl;
     /**
      * Bước 1: Gọi để chuyển hướng đến Google OAuth consent screen
      * FE có thể gọi:
@@ -56,7 +59,7 @@ public class GoogleAuthController {
             @RequestParam(value = "state", required = false) String role,
             HttpServletResponse response) throws IOException {
 
-        String frontendBaseUrl = "https://registry-kick-echo-lower.trycloudflare.com/google-callback";
+        String frontendBaseUrl = frontendUrl + "/google-callback";
         try {
             AuthResponse auth = googleOAuthService.handleGoogleCallback(code, role);
 
