@@ -35,6 +35,7 @@ public interface BannerRepository extends JpaRepository<Banner, Integer> {
     @Query(value = "SELECT b FROM Banner b WHERE b.status = :status AND b.endDate < :now", nativeQuery = true)
     List<Banner> findExpiredBanners(@Param("status") Banner.BannerStatus status, @Param("now") Instant now);
 
+    @Query("SELECT b FROM Banner b WHERE b.deletedAt IS NULL ORDER BY b.createdAt DESC")
     Page<Banner> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
 }
