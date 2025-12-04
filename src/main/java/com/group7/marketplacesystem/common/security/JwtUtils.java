@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 public class JwtUtils {
 
     private final Key key;
-    private final long ACCESS_EXP = 60 * 60 * 1000L;          // 1 giờ
+    private final long ACCESS_EXP = 2 * 60 * 60 * 1000L;          // 1 giờ
     private final long REFRESH_EXP = 7 * 24 * 60 * 60 * 1000L; // 7 ngày
 
 

@@ -18,6 +18,7 @@ public class CorsConfig {
         config.setAllowedOrigins(List.of(
                 "http://localhost:5173",      // React local
                 "http://127.0.0.1:3000",
+                "https://registry-kick-echo-lower.trycloudflare.com",
                 "https://marketplace-frontend-4mvs.vercel.app",
                 "https://marketplace-frontend-4mvs-git-main-mastercode1908s-projects.vercel.app",
                 "https://marketplace-frontend-4mvs-8gr42a2kx-mastercode1908s-projects.vercel.app"
