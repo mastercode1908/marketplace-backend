@@ -90,19 +90,18 @@ public class PaymentIpnService {
         paymentvnpayRepository.save(paymentvnpay);
 
         // 4. Trường hợp thanh toán thành công
+// 4. Trường hợp thanh toán thành công - xử lý async để tránh timeout
         if ("00".equals(responseCode) && "00".equals(txnStatus)) {
-            try {
-                paymentHandlerService.handleSuccessfulPayment(txnRef);
-            } catch (Exception e) {
-                e.printStackTrace();
-                return "99"; // lỗi xử lý order
-            }
+            // Gọi async method - không chờ kết quả để tránh timeout
+            // Method này sẽ xử lý checkout/order creation trong background
+            paymentHandlerService.handleSuccessfulPayment(txnRef);
+            // Trả về ngay lập tức để VNPay không bị timeout
         } else {
             System.out.println(">>> Payment failed for txnRef = " + txnRef);
             // Bạn có thể cập nhật session.setStatus("FAILED") nếu muốn
         }
 
-        // 5. Báo VNPAY là server đã xử lý OK
+        // 5. Báo VNPAY là server đã xử lý OK (trả về ngay sau khi lưu payment record)
         return "00";
     }
 }

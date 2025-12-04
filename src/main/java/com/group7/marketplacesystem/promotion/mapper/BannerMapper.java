@@ -35,6 +35,7 @@ public class BannerMapper {
                 .rejectionReason(banner.getRejectionReason())
                 .createdAt(banner.getCreatedAt())
                 .updatedAt(banner.getUpdatedAt())
+                .deletedAt(banner.getDeletedAt())
                 .build();
     }
 }
