@@ -68,4 +68,13 @@ public class UserController {
         response.put("userId", userId.toString());
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/admin/by-role")
+    @PreAuthorize("hasAnyRole('SELLER', 'BUYER', 'SYSTEMADMIN', 'CONTENTADMIN')")
+    public ResponseEntity<Map<String, Integer>> getAdminIdByRole(@RequestParam String role) {
+        Integer adminId = userService.getAdminIdByRole(role);
+        Map<String, Integer> response = new HashMap<>();
+        response.put("adminId", adminId);
+        return ResponseEntity.ok(response);
+    }
 }

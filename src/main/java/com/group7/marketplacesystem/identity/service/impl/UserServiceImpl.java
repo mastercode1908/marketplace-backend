@@ -147,4 +147,14 @@ public class UserServiceImpl implements UserService {
                 .map(userMapper::toResponse)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public Integer getAdminIdByRole(String role) {
+        List<User> admins = userRepository.findAllByRole(role);
+        if (admins.isEmpty()) {
+            throw new ApiException(ErrorCode.USER_NOT_EXISTED);
+        }
+        // Trả về admin đầu tiên có role này
+        return admins.get(0).getId();
+    }
 }

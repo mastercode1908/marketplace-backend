@@ -19,4 +19,6 @@ public interface UserService {
     void deleteUser(Integer id);
 
     List<UserResponse> searchUsersByName(String searchTerm);
+
+    Integer getAdminIdByRole(String role);
 }
