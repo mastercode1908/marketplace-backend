@@ -66,9 +66,9 @@ public class GoogleAuthController {
             // Tạo cookie refresh token
             ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", auth.getRefreshToken())
                     .httpOnly(true)
-                    .secure(false) // true nếu dùng HTTPS
+                    .secure(true) // true nếu dùng HTTPS
                     .path("/")
-                    .sameSite("Lax")
+                    .sameSite("None")
                     .maxAge(Duration.ofDays(7))
                     .build();
 

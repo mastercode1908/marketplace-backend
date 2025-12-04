@@ -40,9 +40,9 @@ public class AuthController {
         // Đóng gói refresh token vào cookie
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", response.getRefreshToken())
                 .httpOnly(true)
-                .secure(false) // false khi chạy local, true khi deploy HTTPS
+                .secure(true) // false khi chạy local, true khi deploy HTTPS
                 .path("/")
-                .sameSite("Lax") // local nên để Lax để FE gửi được cookie
+                .sameSite("None") // local nên để Lax để FE gửi được cookie
                 .maxAge(Duration.ofDays(7))
                 .build();
 
@@ -76,9 +76,9 @@ public class AuthController {
         // Gắn refreshToken mới vào cookie
         ResponseCookie cookie = ResponseCookie.from("refreshToken", response.getRefreshToken())
                 .httpOnly(true)
-                .secure(false) // false nếu đang dev local
+                .secure(true) // false nếu đang dev local
                 .path("/")
-                .sameSite("Lax") // local nên để Lax để FE gửi được cookie
+                .sameSite("None") // local nên để Lax để FE gửi được cookie
                 .maxAge(Duration.ofDays(7))
                 .build();
 
@@ -96,7 +96,7 @@ public class AuthController {
         // Tạo cookie "xoá" refresh token
         ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
-                .secure(false) // false nếu dev local
+                .secure(true) // false nếu dev local
                 .path("/")
                 .maxAge(0) // 0 = xóa cookie
                 .build();
