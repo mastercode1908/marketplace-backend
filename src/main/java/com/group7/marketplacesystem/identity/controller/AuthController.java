@@ -97,6 +97,7 @@ public class AuthController {
         ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
                 .secure(true) // false nếu dev local
+                .sameSite("None")
                 .path("/")
                 .maxAge(0) // 0 = xóa cookie
                 .build();
