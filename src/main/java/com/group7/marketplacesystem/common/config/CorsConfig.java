@@ -21,7 +21,7 @@ public class CorsConfig {
 
         // 🔓 Cho phép frontend gọi API
         config.setAllowedOrigins(List.of(
-                frontendUrls
+                "https://plane-fingers-jimmy-recruitment.trycloudflare.com"
         ));
 
         // Cho phép các method cần thiết
