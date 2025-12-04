@@ -55,34 +55,42 @@ public class ProductServiceImpl implements ProductService {
     private final ProductMapper productMapper;
     private final PackageUsageRepository pkgUsageRepository;
     private final SellerPackageRepository sellerPackageRepository;
-    private final ServicePackageRepository  servicePackageRepository;
+    private final ServicePackageRepository servicePackageRepository;
     private final MailService mailService;
 
     @Override
     public ProductInfoResponse createProduct(ProductCreateRequest request) {
-        // Lấy seller từ security context
-        Integer sellerId = CurrentUser.getUserId();
-        Seller seller = sellerRepository.findById(sellerId)
-                .orElseThrow(() -> new ApiException(ErrorCode.SELLER_NOT_FOUND));
+        try {
+            // Lấy seller từ security context
+            Integer sellerId = CurrentUser.getUserId();
+            Seller seller = sellerRepository.findById(sellerId)
+                    .orElseThrow(() -> new ApiException(ErrorCode.SELLER_NOT_FOUND));
 
-        // Lấy category
-        Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND));
+            // Lấy category
+            Category category = categoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND));
 
-        // Map sang Product
-        Product product = ProductMapper.toEntity(request, seller, category);
+            // Map sang Product
+            Product product = ProductMapper.toEntity(request, seller, category);
 
-        // Lưu Product
-        productRepository.save(product);
+            // Lưu Product
+            productRepository.save(product);
 
-        // Map và lưu ProductMedia nếu có
-        List<Productmedia> mediaList = ProductMediaMapper.toEntityList(product, request.getMedia());
-        if (!mediaList.isEmpty()) {
-            productMediaRepository.saveAll(mediaList);
+            // Map và lưu ProductMedia nếu có
+            List<Productmedia> mediaList = ProductMediaMapper.toEntityList(product, request.getMedia());
+            if (!mediaList.isEmpty()) {
+                productMediaRepository.saveAll(mediaList);
+            }
+
+            // Trả về response
+            return ProductMapper.toResponse(product, mediaList);
+        } catch (ApiException e) {
+            // Re-throw ApiException để giữ nguyên error code
+            throw e;
+        } catch (Exception e) {
+            // Log lỗi chi tiết
+            throw new RuntimeException("Error creating product: " + e.getMessage(), e);
         }
-
-        // Trả về response
-        return ProductMapper.toResponse(product, mediaList);
     }
 
     @Override
@@ -258,7 +266,6 @@ public class ProductServiceImpl implements ProductService {
                 row.createCell(8).setCellValue(p.getUpdatedAt().toString());
             }
 
-
             // Auto-size
             for (int i = 0; i < headers.length; i++) {
                 sheet.autoSizeColumn(i);
@@ -289,7 +296,8 @@ public class ProductServiceImpl implements ProductService {
         // 2. Lấy danh sách productIds từ package usage của sellerpackage Active
         Optional<Servicepackage> optionalServicePackage1 = servicePackageRepository.findByIdAndDeletedAtIsNull(3);
         Servicepackage servicePackage1 = optionalServicePackage1.orElse(new Servicepackage());
-        List<Sellerpackage> sellerPackage = sellerPackageRepository.findAllIdsByPackageFieldAndStatus(servicePackage1, "Active");
+        List<Sellerpackage> sellerPackage = sellerPackageRepository.findAllIdsByPackageFieldAndStatus(servicePackage1,
+                "Active");
         List<PackageUsage> packageUsageList = pkgUsageRepository.findAllTargetIdBySellerPackageIn(sellerPackage);
         List<Integer> targetIds = packageUsageList.stream()
                 .map(PackageUsage::getTargetId)
@@ -390,8 +398,8 @@ public class ProductServiceImpl implements ProductService {
         Servicepackage servicePackage = optionalServicePackage.get();
 
         // 2. Find all active seller packages of this type
-        List<Sellerpackage> activeSellerPackages = sellerPackageRepository.findAllIdsByPackageFieldAndStatus(servicePackage, "Active");
-
+        List<Sellerpackage> activeSellerPackages = sellerPackageRepository
+                .findAllIdsByPackageFieldAndStatus(servicePackage, "Active");
 
         if (activeSellerPackages.isEmpty()) {
             return new ArrayList<>();
@@ -400,13 +408,11 @@ public class ProductServiceImpl implements ProductService {
         // 3. Get all product IDs from usage records of these packages
         List<PackageUsage> usages = pkgUsageRepository.findAllTargetIdBySellerPackageIn(activeSellerPackages);
 
-        
         List<Integer> productIds = usages.stream()
                 .filter(u -> "Product".equalsIgnoreCase(u.getTargetType()))
                 .map(PackageUsage::getTargetId)
                 .distinct()
                 .toList();
-
 
         if (productIds.isEmpty()) {
             return new ArrayList<>();
@@ -414,7 +420,6 @@ public class ProductServiceImpl implements ProductService {
 
         // 4. Fetch products
         List<Product> products = productRepository.findAllById(productIds);
-
 
         // 5. Randomize order
         Collections.shuffle(products);
