@@ -1,7 +1,6 @@
 package com.group7.marketplacesystem.promotion.service.impl;
 
 
-
 import com.group7.marketplacesystem.common.exception.ApiException;
 import com.group7.marketplacesystem.common.exception.ErrorCode;
 import com.group7.marketplacesystem.identity.entity.Seller;
@@ -26,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,6 +68,9 @@ public class BannerServiceImpl implements BannerService {
             throw new ApiException(ErrorCode.INVALID_END_DATE);
         }
 
+        if (request.getEndDate().isBefore(now)) {
+            throw new ApiException(ErrorCode.INVALID_END_DATE);
+        }
         // Check for active package and deduct usage
         List<Sellerpackage> packages = sellerPackageRepository.findBySellerId(sellerId);
         Sellerpackage activePackage = packages.stream()
@@ -109,7 +112,8 @@ public class BannerServiceImpl implements BannerService {
 
     @Override
     public Page<BannerResponse> getSellerBanners(Integer sellerId, Pageable pageable) {
-        Page<Banner> banners = bannerRepository.findBySeller_IdOrderByCreatedAtDesc(sellerId, pageable);
+        updateExpiredBannersOnTheFly(); // cập nhật trạng thái trước khi trả dữ liệu
+        Page<Banner> banners = bannerRepository.findByDeletedAtIsNullOrderByCreatedAtDesc(pageable);
         List<BannerResponse> responses = banners.getContent().stream()
                 .map(bannerMapper::toResponse)
                 .collect(Collectors.toList());
@@ -122,11 +126,33 @@ public class BannerServiceImpl implements BannerService {
         Banner banner = bannerRepository.findById(bannerId)
                 .orElseThrow(() -> new ApiException(ErrorCode.BANNER_NOT_FOUND));
 
+        Instant now = Instant.now();
+
         if (!banner.getSeller().getId().equals(sellerId)) {
-            throw new ApiException(ErrorCode.UNAUTHORIZED);
+            throw new ApiException(ErrorCode.SELLER_NOT_FOUND);
         }
 
-        if ((banner.getStatus() != BannerStatus.PENDING && banner.getStatus()!=BannerStatus.PAUSED )
+        List<Sellerpackage> packages = sellerPackageRepository.findBySellerId(sellerId);
+        Sellerpackage activePackage = packages.stream()
+                .filter(p -> "Active".equals(p.getStatus()) && p.getRemainingUsage() > 0 && p.getEndDate().isAfter(Instant.now()))
+                .findFirst()
+                .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST)); // Using BAD_REQUEST for now as NO_ACTIVE_PACKAGE might not exist
+
+        if (request.getEndDate().isBefore(request.getStartDate())) {
+            throw new ApiException(ErrorCode.INVALID_DATE_RANGE);
+        }
+        if (request.getStartDate().isBefore(now.minusSeconds(86400))) { // không cho quá khứ
+            throw new ApiException(ErrorCode.INVALID_START_DATE);
+        }
+
+        Instant maxEndDate = request.getStartDate().plusSeconds(365L * 24 * 60 * 60); // max 1 năm
+        if (request.getEndDate().isAfter(maxEndDate)
+                && request.getEndDate().isAfter(activePackage.getEndDate())
+                && request.getEndDate().isBefore(now)) {
+            throw new ApiException(ErrorCode.INVALID_END_DATE);
+        }
+
+        if ((banner.getStatus() != BannerStatus.PENDING && banner.getStatus() != BannerStatus.PAUSED)
                 && banner.getStatus() != BannerStatus.REJECTED) {
             throw new ApiException(ErrorCode.INVALID_BANNER_STATUS);
         }
@@ -246,11 +272,31 @@ public class BannerServiceImpl implements BannerService {
 
     @Override
     public HomepageBannersResponse getHomepageBanners() {
-        Instant now = Instant.now();
         List<Banner> activeBanners = bannerRepository.findActiveBanners(BannerStatus.ACTIVE);
         List<BannerResponse> responses = activeBanners.stream()
                 .map(bannerMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
         return new HomepageBannersResponse(responses);
+    }
+
+
+    @Transactional
+    public void updateExpiredBannersOnTheFly() {
+        Instant now = Instant.now();
+        List<Banner> activeBanners = bannerRepository.findByStatus(Banner.BannerStatus.ACTIVE);
+
+        for (Banner banner : activeBanners) {
+            if (banner.getEndDate().isBefore(now)) {
+                banner.setStatus(Banner.BannerStatus.COMPLETED);
+                bannerRepository.save(banner);
+                bannerRepository.save(banner);
+            }
+        }
+    }
+
+    @Transactional
+    @Scheduled(cron = "0 0 * * * *") // chạy mỗi giờ
+    public void updateExpiredBannersBatch() {
+        bannerRepository.completeExpiredBanners(Instant.now());
     }
 }

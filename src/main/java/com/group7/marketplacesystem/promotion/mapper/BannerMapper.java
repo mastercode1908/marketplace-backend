@@ -38,8 +38,10 @@ public class BannerMapper {
                 .startDate(banner.getStartDate())
                 .endDate(banner.getEndDate())
                 .status(banner.getStatus())
+                .rejectionReason(banner.getRejectionReason())
                 .createdAt(banner.getCreatedAt())
                 .updatedAt(banner.getUpdatedAt())
+                .deletedAt(banner.getDeletedAt())
                 .build();
     }
 
