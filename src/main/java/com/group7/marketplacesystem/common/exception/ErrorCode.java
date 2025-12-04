@@ -88,7 +88,7 @@ public enum ErrorCode {
     INVALID_AMOUNT(4027,"Amount is invalid", HttpStatus.BAD_REQUEST),
     INVALID_QUANTITY_PROMOTION(4028, "Usage limit must be smaller than 10", HttpStatus.BAD_REQUEST),
     INVALID_BANNER_STATUS(4029,"Banner status is invalid for this action" , HttpStatus.BAD_REQUEST),
-    INVALID_BANNER_END_DATE(4039, "End date banner is invalid", HttpStatus.BAD_REQUEST),
+    INVALID_BANNER_END_DATE(4039, "Ngày kết thúc phải sau ngày kết thúc gói dịch vụ", HttpStatus.BAD_REQUEST),
 
     //Password
     PASSWORD_NO_UPPERCASE(5000, "Mật khẩu phải chứa ít nhất 1 chữ hoa", HttpStatus.BAD_REQUEST),

@@ -113,7 +113,7 @@ public class BannerServiceImpl implements BannerService {
     @Override
     public Page<BannerResponse> getSellerBanners(Integer sellerId, Pageable pageable) {
         updateExpiredBannersOnTheFly(); // cập nhật trạng thái trước khi trả dữ liệu
-        Page<Banner> banners = bannerRepository.findByDeletedAtIsNullOrderByCreatedAtDesc(pageable);
+        Page<Banner> banners = bannerRepository.findBySeller_IdAndDeletedAtIsNullOrderByCreatedAtDesc(sellerId,pageable);
         List<BannerResponse> responses = banners.getContent().stream()
                 .map(bannerMapper::toResponse)
                 .collect(Collectors.toList());

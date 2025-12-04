@@ -18,6 +18,8 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 
     List<Product> findBySellerIdAndDeletedAtIsNullOrderByIdDesc(Integer sellerId);
 
+    List<Product> findBySellerIdAndDeletedAtIsNullAndProductStatusOrderByIdDesc(Integer sellerId, String status);
+
     List<Product> findAllByDeletedAtIsNull();
 
     List<Product> findAllProductBySellerIn(List<Seller> sellers);

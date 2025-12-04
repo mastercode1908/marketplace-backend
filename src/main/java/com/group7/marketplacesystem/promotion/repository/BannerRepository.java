@@ -36,7 +36,10 @@ public interface BannerRepository extends JpaRepository<Banner, Integer> {
     @Query("SELECT b FROM Banner b WHERE b.deletedAt IS NULL ORDER BY b.createdAt DESC")
     Page<Banner> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
-    Page<Banner> findByDeletedAtIsNullOrderByCreatedAtDesc(Pageable pageable);
+    Page<Banner> findBySeller_IdAndDeletedAtIsNullOrderByCreatedAtDesc(
+            Integer sellerId,
+            Pageable pageable
+    );
 
     @Query("SELECT b FROM Banner b WHERE b.status = :status AND b.deletedAt IS NULL")
     List<Banner> findByStatus(@Param("status") Banner.BannerStatus status);

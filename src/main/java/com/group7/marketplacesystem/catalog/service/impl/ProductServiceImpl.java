@@ -372,7 +372,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<ProductInfoResponse> getProductsBySellerId(Integer sellerId) {
-        List<Product> products = productRepository.findBySellerIdAndDeletedAtIsNullOrderByIdDesc(sellerId);
+        List<Product> products = productRepository.findBySellerIdAndDeletedAtIsNullAndProductStatusOrderByIdDesc(sellerId, "Approved");
 
         return products.stream().map(p -> {
             List<Productmedia> mediaList = productMediaRepository.findByProductIdAndDeletedAtIsNull(p.getId());

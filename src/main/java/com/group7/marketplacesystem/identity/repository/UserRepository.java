@@ -26,21 +26,39 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     @Query("UPDATE User u SET u.userStatus = :status WHERE u.id = :entityId")
     void updateStatus(@Param("entityId") Integer entityId, @Param("status") String status);
 
-    @Query(value = "SELECT u.*\n" +
-            "FROM users u\n" +
-            "WHERE \n" +
-            "    (:username IS NULL OR u.username LIKE CONCAT('%', :username, '%'))\n" +
-            "    AND (:email IS NULL OR u.email LIKE CONCAT('%', :email, '%'))\n" +
-            "    AND (:phone IS NULL OR u.phone LIKE CONCAT('%', :phone, '%'))\n" +
-            "    AND (:role IS NULL OR u.role = :role)\n" +
-            "    AND (:user_status IS NULL OR u.user_status = :user_status)\n" +
-            "    AND ((u.deleted_at IS NULL))", nativeQuery = true)
-    Page<User> searchUsers(@Param("username") String username,
-                           @Param("email") String email,
-                           @Param("phone") String phone,
-                           @Param("role") String role,
-                           @Param("user_status") String userStatus,
-                           Pageable pageable);
+    @Query(value = """
+        SELECT u.*
+        FROM users u
+        WHERE
+            (:username IS NULL OR u.username LIKE CONCAT('%', :username, '%'))
+            AND (:email IS NULL OR u.email LIKE CONCAT('%', :email, '%'))
+            AND (:phone IS NULL OR u.phone LIKE CONCAT('%', :phone, '%'))
+            AND (:role IS NULL OR u.role = :role)
+            AND u.role NOT IN ('SYSTEMADMIN', 'CONTENTADMIN')
+            AND (:user_status IS NULL OR u.user_status = :user_status)
+            AND u.deleted_at IS NULL
+        """,
+            countQuery = """
+        SELECT COUNT(*)
+        FROM users u
+        WHERE
+            (:username IS NULL OR u.username LIKE CONCAT('%', :username, '%'))
+            AND (:email IS NULL OR u.email LIKE CONCAT('%', :email, '%'))
+            AND (:phone IS NULL OR u.phone LIKE CONCAT('%', :phone, '%'))
+            AND (:role IS NULL OR u.role = :role)
+            AND (:user_status IS NULL OR u.user_status = :user_status)
+            AND u.deleted_at IS NULL
+        """,
+            nativeQuery = true)
+    Page<User> searchUsers(
+            @Param("username") String username,
+            @Param("email") String email,
+            @Param("phone") String phone,
+            @Param("role") String role,
+            @Param("user_status") String userStatus,
+            Pageable pageable
+    );
+
 
     @Query(value = "SELECT u.*\n" +
             "FROM users u\n" +
