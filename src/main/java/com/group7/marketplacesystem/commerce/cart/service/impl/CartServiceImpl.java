@@ -135,6 +135,10 @@ public class CartServiceImpl implements CartService {
             stockQuantity = 0;
         }
 
+        if (product.getDeletedAt() != null) {
+            throw new ApiException(ErrorCode.PRODUCT_IS_DELETE);
+        }
+
         if (request.getQuantity() > stockQuantity) {
             throw new ApiException(ErrorCode.QUANTITY_EXCEEDED_STOCK);
         }
