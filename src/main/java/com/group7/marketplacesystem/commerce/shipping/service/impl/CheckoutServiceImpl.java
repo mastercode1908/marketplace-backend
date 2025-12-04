@@ -121,12 +121,20 @@ public class CheckoutServiceImpl implements CheckoutService {
 
         List<Cartitem> cartItems = cartItemRepository.findByCartId(cart.getId());
         if (cartItems.isEmpty()) {
-            throw new ApiException(ErrorCode.BAD_REQUEST);
+            throw new ApiException(ErrorCode.CART_EMPTY);
         }
 
         // Kiểm tra số lượng tồn kho trước khi đặt hàng
         for (Cartitem cartItem : cartItems) {
             Product product = cartItem.getProduct();
+            if (product == null) {
+                throw new ApiException(ErrorCode.PRODUCT_IS_DELETE);
+            }
+
+            if (product.getDeletedAt() != null) {
+                throw new ApiException(ErrorCode.PRODUCT_IS_DELETE);
+            }
+
             Integer requestedQuantity = cartItem.getQuantity();
             Integer availableStock = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
 
@@ -134,6 +142,7 @@ public class CheckoutServiceImpl implements CheckoutService {
                 throw new ApiException(ErrorCode.QUANTITY_EXCEEDED_STOCK);
             }
         }
+
 
         // Nhóm sản phẩm theo seller
         Map<Integer, List<Cartitem>> itemsBySeller = cartItems.stream()
@@ -165,6 +174,9 @@ public class CheckoutServiceImpl implements CheckoutService {
             if (promoCode != null && !promoCode.isEmpty()) {
                 appliedPromotion = promotionRepository.findByPromotionCode(promoCode)
                         .orElseThrow(() -> new ApiException(ErrorCode.PROMOTION_NOT_FOUND));
+                if (appliedPromotion.getDeletedAt() != null) {
+                    throw new ApiException(ErrorCode.PROMOTION_IS_DELETE);
+                }
 
                 discountAmount = calculatePromotionDiscount(appliedPromotion, totalAmount,sellerIdA);
             }
@@ -323,17 +335,27 @@ public class CheckoutServiceImpl implements CheckoutService {
                 .orElseThrow(() -> new ApiException(ErrorCode.CART_NOT_FOUND));
         List<Cartitem> cartItems = cartItemRepository.findByCartId(cart.getId());
         if (cartItems.isEmpty()) {
-            throw new ApiException(ErrorCode.BAD_REQUEST);
+            throw new ApiException(ErrorCode.CART_EMPTY);
         }
 
         // 3. Check tồn kho
         for (Cartitem cartItem : cartItems) {
             Product product = cartItem.getProduct();
+
+            if (product == null) {
+                throw new ApiException(ErrorCode.PRODUCT_IS_DELETE);
+            }
+
+            if (product.getDeletedAt() != null) {
+                throw new ApiException(ErrorCode.PRODUCT_IS_DELETE);
+            }
+
             Integer requestedQuantity = cartItem.getQuantity();
             Integer availableStock = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
             if (availableStock < requestedQuantity) {
                 throw new ApiException(ErrorCode.QUANTITY_EXCEEDED_STOCK);
             }
+
         }
 
         // Mapping sellerId -> promoCode
@@ -375,6 +397,10 @@ public class CheckoutServiceImpl implements CheckoutService {
                         .orElseThrow(() -> new ApiException(ErrorCode.PROMOTION_NOT_FOUND));
 
                 BigDecimal discount = calculatePromotionDiscount(promotion, subtotal, sellerId);
+
+                if (promotion.getDeletedAt() != null) {
+                    throw new ApiException(ErrorCode.PROMOTION_IS_DELETE);
+                }
                 sellerFinal = sellerFinal.subtract(discount);
             }
 
