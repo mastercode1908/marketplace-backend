@@ -28,6 +28,7 @@ public class ProductReportMapper {
         response.setCreatedAt(productreport.getCreatedAt());
         response.setResolvedAt(productreport.getResolvedAt());
         response.setShop_name(productreport.getProduct().getSeller().getShopName());
+        response.setSellerId(productreport.getProduct().getSeller().getId());
         response.setProduct_name(productreport.getProduct().getName());
         response.setRating_count(productreport.getProduct().getSeller().getRatingCount());
         

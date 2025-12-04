@@ -14,6 +14,7 @@ public class ProductReportResponse {
     private Instant createdAt;
     private Instant resolvedAt;
     private String shop_name;
+    private Integer sellerId;
     private Integer rating_count;
     private String product_name;
     private String buyerName;
