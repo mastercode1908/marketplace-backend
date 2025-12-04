@@ -1,5 +1,6 @@
 package com.group7.marketplacesystem.commerce.payment.Service.impl;
 
+
 import com.group7.marketplacesystem.commerce.payment.Service.VNPayService;
 import com.group7.marketplacesystem.commerce.payment.entity.PaymentSession;
 import com.group7.marketplacesystem.commerce.payment.entity.Paymentvnpay;
@@ -30,7 +31,7 @@ public class VNPayServiceImpl implements VNPayService {
 
     private final VNPayConfig vnPayConfig;
     private final VNPayUtils vnPayUtils;
-    private final PaymentvnpayRepository paymentvnpayRepository;
+    private final PaymentvnpayRepository  paymentvnpayRepository;
     private final PaymentVnpayMapper paymentVnpayMapper;
     private final PaymentSessionRepository paymentSessionRepository;
 
@@ -47,7 +48,7 @@ public class VNPayServiceImpl implements VNPayService {
 
         long vnpAmount = amount.multiply(BigDecimal.valueOf(100)).longValue(); // VNPAY yêu cầu *100
 
-        // String bankCode = "NCB";
+//        String bankCode = "NCB";
         String vnp_TxnRef = txnRef;
         String vnp_IpAddr = "127.0.0.1";
         String vnp_TmnCode = vnPayConfig.vnp_TmnCode;
@@ -59,8 +60,22 @@ public class VNPayServiceImpl implements VNPayService {
         vnp_Params.put("vnp_Amount", String.valueOf(vnpAmount));
         vnp_Params.put("vnp_CurrCode", "VND");
 
-        // vnp_Params.put("vnp_BankCode", bankCode);
+//        vnp_Params.put("vnp_BankCode", bankCode);
         vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
+        vnp_Params.put("vnp_OrderInfo", "Thanh toan don hang: " + vnp_TxnRef);
+        vnp_Params.put("vnp_OrderType", orderType);
+        vnp_Params.put("vnp_Locale", "vn");
+        vnp_Params.put("vnp_ReturnUrl", vnPayConfig.vnp_ReturnUrl);
+        vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
+
+        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+        String vnp_CreateDate = formatter.format(cld.getTime());
+        vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
+
+        cld.add(Calendar.MINUTE, 15);
+        String vnp_ExpireDate = formatter.format(cld.getTime());
+        vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
 
         List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
         Collections.sort(fieldNames);
@@ -104,13 +119,13 @@ public class VNPayServiceImpl implements VNPayService {
                     .append(URLEncoder.encode(sorted.get(key), StandardCharsets.UTF_8))
                     .append("&");
         }
-        if (sb.length() > 0)
-            sb.setLength(sb.length() - 1);
+        if (sb.length() > 0) sb.setLength(sb.length() - 1);
 
         String expectedHash = VNPayUtils.hmacSHA512(vnpHashSecret, sb.toString());
 
         return expectedHash.equalsIgnoreCase(vnpSecureHash);
     }
+
 
     public PaymentVnpayResponse getPaymentByTxnRef(String txnRef) {
         Paymentvnpay payment = paymentvnpayRepository.findTopByVnpTxnRefOrderByCreatedAtDesc(txnRef)
