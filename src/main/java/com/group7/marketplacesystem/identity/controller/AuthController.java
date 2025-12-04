@@ -11,6 +11,7 @@ import com.group7.marketplacesystem.identity.dto.response.AuthResponse;
 import com.group7.marketplacesystem.identity.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -29,6 +30,9 @@ import static com.fasterxml.jackson.databind.type.LogicalType.Map;
 public class AuthController {
     private final AuthService authService;
 
+    @Value("${domain.backend.url}")
+    private String backendUrl;
+
     //    ? là wildcard trong Java generics, cho phép body có thể là AuthResponse, Map, String, v.v.
 //    Ở method login(), tuỳ trường hợp:
 //    Nếu login thành công → body là AuthResponse.
@@ -43,6 +47,7 @@ public class AuthController {
                 .secure(true) // false khi chạy local, true khi deploy HTTPS
                 .path("/")
                 .sameSite("None") // local nên để Lax để FE gửi được cookie
+                .domain(backendUrl)
                 .maxAge(Duration.ofDays(7))
                 .build();
 
@@ -79,6 +84,7 @@ public class AuthController {
                 .secure(true) // false nếu đang dev local
                 .path("/")
                 .sameSite("None") // local nên để Lax để FE gửi được cookie
+                .domain(backendUrl)
                 .maxAge(Duration.ofDays(7))
                 .build();
 
@@ -99,6 +105,7 @@ public class AuthController {
                 .secure(true) // false nếu dev local
                 .sameSite("None")
                 .path("/")
+                .domain(backendUrl)
                 .maxAge(0) // 0 = xóa cookie
                 .build();
 

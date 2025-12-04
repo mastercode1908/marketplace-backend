@@ -29,6 +29,9 @@ public class GoogleAuthController {
 
     @Value("${app.frontend.url}") // link frontend mặc định
     private String frontendUrl;
+
+    @Value("${domain.backend.url}")
+    private String backendUrl;
     /**
      * Bước 1: Gọi để chuyển hướng đến Google OAuth consent screen
      * FE có thể gọi:
@@ -69,6 +72,7 @@ public class GoogleAuthController {
                     .secure(true) // true nếu dùng HTTPS
                     .path("/")
                     .sameSite("None")
+                    .domain(backendUrl)
                     .maxAge(Duration.ofDays(7))
                     .build();
 
