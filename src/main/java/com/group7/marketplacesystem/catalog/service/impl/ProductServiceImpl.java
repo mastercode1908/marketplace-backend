@@ -14,6 +14,7 @@ import com.group7.marketplacesystem.catalog.repository.CategoryRepository;
 import com.group7.marketplacesystem.catalog.repository.ProductRepository;
 import com.group7.marketplacesystem.catalog.repository.ProductmediaRepository;
 import com.group7.marketplacesystem.catalog.service.ProductService;
+import com.group7.marketplacesystem.commerce.order.repository.OrderDetailRepository;
 import com.group7.marketplacesystem.common.exception.ApiException;
 import com.group7.marketplacesystem.common.exception.ErrorCode;
 import com.group7.marketplacesystem.common.security.CurrentUser;
@@ -57,6 +58,7 @@ public class ProductServiceImpl implements ProductService {
     private final SellerPackageRepository sellerPackageRepository;
     private final ServicePackageRepository  servicePackageRepository;
     private final MailService mailService;
+    private final OrderDetailRepository orderDetailRepository;
 
     @Override
     public ProductInfoResponse createProduct(ProductCreateRequest request) {
@@ -81,8 +83,12 @@ public class ProductServiceImpl implements ProductService {
             productMediaRepository.saveAll(mediaList);
         }
 
+        // Tính số lượng đã bán
+        Long soldQuantityLong = orderDetailRepository.getSoldQuantityByProductId(product.getId());
+        Integer soldQuantity = soldQuantityLong != null ? soldQuantityLong.intValue() : 0;
+
         // Trả về response
-        return ProductMapper.toResponse(product, mediaList);
+        return ProductMapper.toResponse(product, mediaList, soldQuantity);
     }
 
     @Override
@@ -93,7 +99,11 @@ public class ProductServiceImpl implements ProductService {
         // Lấy media
         List<Productmedia> mediaList = productMediaRepository.findByProductIdAndDeletedAtIsNull(productId);
 
-        return ProductMapper.toResponse(product, mediaList);
+        // Tính số lượng đã bán
+        Long soldQuantityLong = orderDetailRepository.getSoldQuantityByProductId(productId);
+        Integer soldQuantity = soldQuantityLong != null ? soldQuantityLong.intValue() : 0;
+
+        return ProductMapper.toResponse(product, mediaList, soldQuantity);
     }
 
     @Override
@@ -128,7 +138,11 @@ public class ProductServiceImpl implements ProductService {
             productMediaRepository.saveAll(mediaList);
         }
 
-        return ProductMapper.toResponse(product, mediaList);
+        // Tính số lượng đã bán
+        Long soldQuantityLong = orderDetailRepository.getSoldQuantityByProductId(productId);
+        Integer soldQuantity = soldQuantityLong != null ? soldQuantityLong.intValue() : 0;
+
+        return ProductMapper.toResponse(product, mediaList, soldQuantity);
     }
 
     @Override
@@ -162,7 +176,9 @@ public class ProductServiceImpl implements ProductService {
 
         return products.stream().map(p -> {
             List<Productmedia> mediaList = productMediaRepository.findByProductIdAndDeletedAtIsNull(p.getId());
-            return ProductMapper.toResponse(p, mediaList);
+            Long soldQuantityLong = orderDetailRepository.getSoldQuantityByProductId(p.getId());
+            Integer soldQuantity = soldQuantityLong != null ? soldQuantityLong.intValue() : 0;
+            return ProductMapper.toResponse(p, mediaList, soldQuantity);
         }).toList();
     }
 
@@ -206,7 +222,9 @@ public class ProductServiceImpl implements ProductService {
 
         return products.stream().map(p -> {
             List<Productmedia> mediaList = productMediaRepository.findByProductIdAndDeletedAtIsNull(p.getId());
-            return ProductMapper.toResponse(p, mediaList);
+            Long soldQuantityLong = orderDetailRepository.getSoldQuantityByProductId(p.getId());
+            Integer soldQuantity = soldQuantityLong != null ? soldQuantityLong.intValue() : 0;
+            return ProductMapper.toResponse(p, mediaList, soldQuantity);
         }).toList();
     }
 
@@ -336,7 +354,9 @@ public class ProductServiceImpl implements ProductService {
         List<ProductInfoResponse> pageContent = finalProducts.subList(start, end).stream()
                 .map(p -> {
                     List<Productmedia> mediaList = productMediaRepository.findByProductIdAndDeletedAtIsNull(p.getId());
-                    return ProductMapper.toResponse(p, mediaList);
+                    Long soldQuantityLong = orderDetailRepository.getSoldQuantityByProductId(p.getId());
+                    Integer soldQuantity = soldQuantityLong != null ? soldQuantityLong.intValue() : 0;
+                    return ProductMapper.toResponse(p, mediaList, soldQuantity);
                 })
                 .collect(Collectors.toList());
 
@@ -363,7 +383,9 @@ public class ProductServiceImpl implements ProductService {
         List<ProductInfoResponse> pageContent = productList.subList(start, end).stream()
                 .map(p -> {
                     List<Productmedia> mediaList = productMediaRepository.findByProductIdAndDeletedAtIsNull(p.getId());
-                    return ProductMapper.toResponse(p, mediaList);
+                    Long soldQuantityLong = orderDetailRepository.getSoldQuantityByProductId(p.getId());
+                    Integer soldQuantity = soldQuantityLong != null ? soldQuantityLong.intValue() : 0;
+                    return ProductMapper.toResponse(p, mediaList, soldQuantity);
                 })
                 .collect(Collectors.toList());
 
@@ -376,7 +398,9 @@ public class ProductServiceImpl implements ProductService {
 
         return products.stream().map(p -> {
             List<Productmedia> mediaList = productMediaRepository.findByProductIdAndDeletedAtIsNull(p.getId());
-            return ProductMapper.toResponse(p, mediaList);
+            Long soldQuantityLong = orderDetailRepository.getSoldQuantityByProductId(p.getId());
+            Integer soldQuantity = soldQuantityLong != null ? soldQuantityLong.intValue() : 0;
+            return ProductMapper.toResponse(p, mediaList, soldQuantity);
         }).toList();
     }
 
@@ -424,7 +448,9 @@ public class ProductServiceImpl implements ProductService {
                 .filter(p -> p.getDeletedAt() == null && "Approved".equals(p.getProductStatus()))
                 .map(p -> {
                     List<Productmedia> mediaList = productMediaRepository.findByProductIdAndDeletedAtIsNull(p.getId());
-                    return ProductMapper.toResponse(p, mediaList);
+                    Long soldQuantityLong = orderDetailRepository.getSoldQuantityByProductId(p.getId());
+                    Integer soldQuantity = soldQuantityLong != null ? soldQuantityLong.intValue() : 0;
+                    return ProductMapper.toResponse(p, mediaList, soldQuantity);
                 })
                 .toList();
     }

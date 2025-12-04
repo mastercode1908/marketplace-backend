@@ -24,6 +24,7 @@ public class ProductInfoResponse {
     private BigDecimal price;
     private Integer weight;
     private Integer stockQuantity;
+    private Integer soldQuantity;
     private String productStatus;
     private Instant createdAt;
     private Instant updatedAt;

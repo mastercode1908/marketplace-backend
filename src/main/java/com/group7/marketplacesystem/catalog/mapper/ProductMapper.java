@@ -134,6 +134,10 @@ public class ProductMapper {
     }
 
     public static ProductInfoResponse toResponse(Product product, List<Productmedia> mediaList) {
+        return toResponse(product, mediaList, null);
+    }
+
+    public static ProductInfoResponse toResponse(Product product, List<Productmedia> mediaList, Integer soldQuantity) {
         if (product == null) return null;
 
         ProductInfoResponse response = new ProductInfoResponse();
@@ -146,6 +150,7 @@ public class ProductMapper {
         response.setPrice(product.getPrice());
         response.setWeight(product.getWeight());
         response.setStockQuantity(product.getStockQuantity());
+        response.setSoldQuantity(soldQuantity != null ? soldQuantity : 0);
         response.setProductStatus(product.getProductStatus());
         response.setCreatedAt(product.getCreatedAt());
         response.setUpdatedAt(product.getUpdatedAt());

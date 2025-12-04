@@ -29,6 +29,13 @@ public interface OrderDetailRepository extends JpaRepository<Orderdetail, Intege
            "ORDER BY SUM(od.subtotal) DESC", nativeQuery = true)
     List<Object[]> getTopProductsBySeller(@Param("sellerId") Integer sellerId);
 
+    // Query to get total sold quantity for a product
+    @Query("SELECT COALESCE(SUM(od.quantity), 0) " +
+           "FROM Orderdetail od " +
+           "WHERE od.product.id = :productId " +
+           "AND od.order.orderStatus IN ('Delivered')")
+    Long getSoldQuantityByProductId(@Param("productId") Integer productId);
+
 }
 
 
