@@ -62,6 +62,9 @@ public class AuthServiceImpl implements AuthService {
         if ("Pending".equalsIgnoreCase(user.getUserStatus())) {
             throw new ApiException(ErrorCode.ACCOUNT_PENDING);
         }
+        if("Reviewing".equalsIgnoreCase(user.getUserStatus())) {
+            throw new ApiException(ErrorCode.ACCOUNT_REVIEWING);
+        }
 
         // Xác thực user bằng AuthenticationManager tu dong ca email va password khac ben google tra ve access tokem
         Authentication authentication = authenticationManager.authenticate(

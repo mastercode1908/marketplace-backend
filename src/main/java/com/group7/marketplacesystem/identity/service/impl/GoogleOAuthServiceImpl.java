@@ -229,6 +229,7 @@ public class GoogleOAuthServiceImpl implements IGoogleOAuthService {
             case "Banned" -> throw new ApiException(ErrorCode.ACCOUNT_BANNED);
             case "Inactive" -> throw new ApiException(ErrorCode.ACCOUNT_INACTIVE);
             case "Pending" -> throw new ApiException(ErrorCode.ACCOUNT_PENDING);
+            case "Reviewing" -> throw new ApiException(ErrorCode.ACCOUNT_REVIEWING);
         }
     }
 }

@@ -105,6 +105,8 @@ public enum ErrorCode {
     ACCOUNT_INACTIVE(6002, "Account is inactive", HttpStatus.UNAUTHORIZED),
     ACCOUNT_PENDING(6003, "Account is pending", HttpStatus.UNAUTHORIZED),
     ACCOUNT_DELETED(6004, "Account is deleted", HttpStatus.FORBIDDEN),
+    ACCOUNT_REVIEWING(6005, "Tài khoản đang được xét duyệt", HttpStatus.UNAUTHORIZED),
+
 
 
 
