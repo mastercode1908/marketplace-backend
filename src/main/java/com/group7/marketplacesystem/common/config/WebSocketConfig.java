@@ -49,6 +49,19 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws/notifications")
                 .setAllowedOriginPatterns("*")
                 .addInterceptors(jwtHandshakeInterceptor)
+                .setHandshakeHandler(new DefaultHandshakeHandler() {
+                    @Override
+                    protected Principal determineUser(ServerHttpRequest request,
+                                                      WebSocketHandler wsHandler,
+                                                      Map<String, Object> attributes) {
+                        String token = (String) attributes.get("jwt");
+                        if (token != null) {
+                            Integer userId = jwtUserUtil.extractUserId(token);
+                            return () -> userId.toString();
+                        }
+                        return null;
+                    }
+                })
                 .withSockJS();
 
         // Socket mới dành riêng cho chat

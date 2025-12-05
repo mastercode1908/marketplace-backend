@@ -13,7 +13,7 @@ public interface CartItemRepository extends JpaRepository<Cartitem, Integer> {
     @Query(value = "SELECT ci.*\n" +
             "FROM cartitem ci\n" +
             "JOIN product p ON p.product_id = ci.product_id\n" +
-            "WHERE p.deleted_at IS NULL", nativeQuery = true)
+            "WHERE ci.cart_id = :cartId AND p.deleted_at IS NULL", nativeQuery = true)
     List<Cartitem> findByCartId(Integer cartId);
 
     Optional<Cartitem> findByCartIdAndProductId(Integer cartId, Integer productId);
