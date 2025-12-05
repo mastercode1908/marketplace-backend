@@ -79,21 +79,25 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
                                      @Param("endDate") Instant endDate,
                                      @Param("sellerId") Integer sellerId);
 
-    @Query(value = "SELECT DATE_FORMAT(p.created_at, :dateFormat) as period, " +
-            "COALESCE(SUM(p.amount), 0) as revenue, " +
-            "COUNT(DISTINCT p.payment_id) as packageCount " +
-            "FROM payment p " +
-            "INNER JOIN payment_session ps ON p.target_id = ps.target_id AND p.target_type = 'Package' AND ps.target_type = 'Package' " +
-            "WHERE p.created_at >= :startDate AND p.created_at < :endDate " +
-            "AND p.status = 'Paid' " +
-            "AND p.target_type = 'Package' " +
-            "AND (:sellerId IS NULL OR ps.seller_id = :sellerId) " +
-            "GROUP BY period " +
-            "ORDER BY period", nativeQuery = true)
+    @Query(value = "SELECT \n" +
+            "    DATE_FORMAT(p.created_at, :dateFormat) AS period,\n" +
+            "    COALESCE(SUM(p.amount), 0) AS revenue,\n" +
+            "    COUNT(DISTINCT p.id) AS packageCount\n" +
+            "FROM paymentvnpay p\n" +
+            "INNER JOIN payment_session ps\n" +
+            "    ON CONVERT(p.vnp_txn_ref USING utf8mb4) = CONVERT(ps.txn_ref USING utf8mb4)\n" +
+            "WHERE p.created_at >= :startDate\n" +
+            "  AND p.created_at < :endDate\n" +
+            "  AND p.status = 'Success'\n" +
+            "  AND ps.status = 'COMPLETED'\n" +
+            "  AND ps.target_type = 'Package'\n" +
+            "  AND (:sellerId IS NULL OR ps.seller_id = :sellerId)\n" +
+            "GROUP BY period\n" +
+            "ORDER BY period;", nativeQuery = true)
     List<Object[]> getServicePackageRevenueByPeriod(@Param("startDate") Instant startDate,
-                                                     @Param("endDate") Instant endDate,
-                                                     @Param("sellerId") Integer sellerId,
-                                                     @Param("dateFormat") String dateFormat);
+                                                    @Param("endDate") Instant endDate,
+                                                    @Param("sellerId") Integer sellerId,
+                                                    @Param("dateFormat") String dateFormat);
 
     @Query(value = "SELECT \n" +
             "    ps.seller_id,\n" +
