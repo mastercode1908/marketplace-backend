@@ -88,7 +88,8 @@ public class GoogleOAuthServiceImpl implements IGoogleOAuthService {
 
         validateUserStatus(user);
 
-        // Bọc user vào CustomUserDetails để tương thích với Spring Security co the sd @PreAuthorize
+        // Bọc user vào CustomUserDetails để tương thích với Spring Security co the sd
+        // @PreAuthorize
         List<String> permissions = rolePermissionRepository.findPermissionCodesByRole(user.getRole().toUpperCase());
         CustomUserDetails userDetails = new CustomUserDetails(user, permissions);
 
@@ -121,8 +122,8 @@ public class GoogleOAuthServiceImpl implements IGoogleOAuthService {
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
         HttpEntity<?> entity = new HttpEntity<>(params, headers);
-        ResponseEntity<GoogleTokenResponse> res =
-                restTemplate.exchange(tokenUri, HttpMethod.POST, entity, GoogleTokenResponse.class);
+        ResponseEntity<GoogleTokenResponse> res = restTemplate.exchange(tokenUri, HttpMethod.POST, entity,
+                GoogleTokenResponse.class);
 
         return res.getBody().getAccess_token();
     }
@@ -132,13 +133,22 @@ public class GoogleOAuthServiceImpl implements IGoogleOAuthService {
         headers.setBearerAuth(accessToken);
 
         HttpEntity<?> entity = new HttpEntity<>(headers);
-        ResponseEntity<GoogleUserInfoResponse> res =
-                restTemplate.exchange(userInfoUri, HttpMethod.GET, entity, GoogleUserInfoResponse.class);
+        ResponseEntity<GoogleUserInfoResponse> res = restTemplate.exchange(userInfoUri, HttpMethod.GET, entity,
+                GoogleUserInfoResponse.class);
 
         return res.getBody();
     }
 
     private User upsertUser(GoogleUserInfoResponse info, String role) {
+        // Kiểm tra xem provider Google với sub này đã tồn tại chưa
+        Optional<UserProvider> existingProvider = userProviderRepository
+                .findByProviderAndProviderId("GOOGLE", info.getSub());
+
+        if (existingProvider.isPresent()) {
+            // Provider đã tồn tại → email này đã đăng ký Google rồi
+            throw new ApiException(ErrorCode.MAIL_EXISTED);
+        }
+
         // Kiểm tra xem email đã có user chưa
         User user = userRepository.findByEmail(info.getEmail())
                 .map(u -> {
@@ -159,39 +169,31 @@ public class GoogleOAuthServiceImpl implements IGoogleOAuthService {
                     newUser.setRole(role);
                     newUser.setUsername(info.getEmail().split("@")[0]);
                     newUser.setEmailVerified(true);
-                    if(role.equalsIgnoreCase("BUYER")){
+                    if (role.equalsIgnoreCase("BUYER")) {
                         newUser.setUserStatus("Active");
                         Buyer buyer = buyerMapper.toBuyerEntity(newUser);
                         buyerRepository.save(buyer);
 
                         cartService.createCart(newUser.getId());
-                    }else{
+                    } else {
                         newUser.setUserStatus("Incomplete");
                         Seller seller = sellerMapper.toSellerEntity(newUser);
                         sellerRepository.save(seller);
-                        //Chuyen huong code o day sang trang bo sung thong tin cho seller
+                        // Chuyen huong code o day sang trang bo sung thong tin cho seller
                     }
                     newUser.setCreatedAt(Instant.now());
                     newUser.setUpdatedAt(Instant.now());
                     return userRepository.save(newUser);
                 });
 
-        // Kiểm tra UserProvider theo provider = GOOGLE + sub
-        boolean providerExists = userProviderRepository
-                .findByProviderAndProviderId("GOOGLE", info.getSub())
-                .isPresent();
+        // Tạo mới liên kết Google account (đã check provider không tồn tại ở trên)
+        UserProvider userProvider = GoogleUserMapper.toUserProvider(user, info);
+        userProviderRepository.save(userProvider);
 
-        // Nếu chưa có → tạo mới liên kết Google account
-        if (!providerExists) {
-            UserProvider userProvider = GoogleUserMapper.toUserProvider(user, info);
-            userProviderRepository.save(userProvider);
-        }else{
-            throw new ApiException(ErrorCode.MAIL_EXISTED);
-        }
-
-        //  Trả về user đã upsert
+        // Trả về user đã upsert
         return user;
     }
+
     private User upsertUserLogin(GoogleUserInfoResponse info) {
         // Kiểm tra xem email đã có user chưa
         User user = userRepository.findByEmail(info.getEmail())

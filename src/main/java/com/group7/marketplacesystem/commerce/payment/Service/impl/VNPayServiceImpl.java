@@ -23,6 +23,9 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -38,52 +41,48 @@ public class VNPayServiceImpl implements VNPayService {
     @Override
     public String createPayment(BigDecimal amount, String txnRef) throws UnsupportedEncodingException {
 
-        String vnp_Version = "2.1.0";
-        String vnp_Command = "pay";
-        String orderType = "other";
-
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new ApiException(ErrorCode.INVALID_AMOUNT);
         }
 
         long vnpAmount = amount.multiply(BigDecimal.valueOf(100)).longValue(); // VNPAY yêu cầu *100
 
-//        String bankCode = "NCB";
-        String vnp_TxnRef = txnRef;
-        String vnp_IpAddr = "127.0.0.1";
-        String vnp_TmnCode = vnPayConfig.vnp_TmnCode;
-
         Map<String, String> vnp_Params = new HashMap<>();
-        vnp_Params.put("vnp_Version", vnp_Version);
-        vnp_Params.put("vnp_Command", vnp_Command);
-        vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
+        vnp_Params.put("vnp_Version", "2.1.0");
+        vnp_Params.put("vnp_Command", "pay");
+        vnp_Params.put("vnp_TmnCode", vnPayConfig.vnp_TmnCode);
         vnp_Params.put("vnp_Amount", String.valueOf(vnpAmount));
         vnp_Params.put("vnp_CurrCode", "VND");
-
-//        vnp_Params.put("vnp_BankCode", bankCode);
-        vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
-        vnp_Params.put("vnp_OrderInfo", "Thanh toan don hang: " + vnp_TxnRef);
-        vnp_Params.put("vnp_OrderType", orderType);
+        vnp_Params.put("vnp_TxnRef", txnRef);
+        vnp_Params.put("vnp_OrderInfo", "Thanh toan don hang: " + txnRef);
+        vnp_Params.put("vnp_OrderType", "other");
         vnp_Params.put("vnp_Locale", "vn");
         vnp_Params.put("vnp_ReturnUrl", vnPayConfig.vnp_ReturnUrl);
+
+        // ⚠ Lấy IP thật thay vì 127.0.0.1
+        String vnp_IpAddr = "0.0.0.0";
         vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
 
-        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
-        String vnp_CreateDate = formatter.format(cld.getTime());
-        vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
 
-        cld.add(Calendar.MINUTE, 15);
-        String vnp_ExpireDate = formatter.format(cld.getTime());
+        // ======================= FIX TIMEZONE =======================
+        ZoneId zone = ZoneId.of("Asia/Ho_Chi_Minh");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+
+        String vnp_CreateDate = LocalDateTime.now(zone).format(formatter);
+        String vnp_ExpireDate = LocalDateTime.now(zone).plusMinutes(15).format(formatter);
+
+        vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
         vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
+        // =============================================================
 
         List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
         Collections.sort(fieldNames);
         StringBuilder hashData = new StringBuilder();
         StringBuilder query = new StringBuilder();
+
         for (String fieldName : fieldNames) {
             String fieldValue = vnp_Params.get(fieldName);
-            if ((fieldValue != null) && (fieldValue.length() > 0)) {
+            if (fieldValue != null && !fieldValue.isEmpty()) {
                 hashData.append(fieldName).append('=')
                         .append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
                 query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII.toString()))
@@ -94,14 +93,11 @@ public class VNPayServiceImpl implements VNPayService {
             }
         }
 
-        if (query.length() > 0)
-            query.setLength(query.length() - 1);
-        if (hashData.length() > 0)
-            hashData.setLength(hashData.length() - 1);
+        if (hashData.length() > 0) hashData.setLength(hashData.length() - 1);
+        if (query.length() > 0) query.setLength(query.length() - 1);
 
         String vnp_SecureHash = vnPayUtils.hmacSHA512(vnPayConfig.vnp_HashSecret, hashData.toString());
-        query.append("&vnp_SecureHash=").append(vnp_SecureHash);
-        return vnPayConfig.vnp_PayUrl + "?" + query;
+        return vnPayConfig.vnp_PayUrl + "?" + query + "&vnp_SecureHash=" + vnp_SecureHash;
     }
 
     @Override
