@@ -1,5 +1,7 @@
 package com.group7.marketplacesystem.identity.service.impl;
 
+import com.group7.marketplacesystem.commerce.shipping.entity.GHNShopInfo;
+import com.group7.marketplacesystem.commerce.shipping.repository.GHNShopInfoRepository;
 import com.group7.marketplacesystem.common.exception.ApiException;
 import com.group7.marketplacesystem.common.exception.ErrorCode;
 import com.group7.marketplacesystem.identity.dto.request.SellerRejectRequest;
@@ -25,6 +27,7 @@ public class SellerReviewServiceImpl implements SellerReviewService {
     private final SellerRepository sellerRepository;
     private final UserRepository userRepository;
     private final MailService mailService;
+    private final GHNShopInfoRepository  ghnShopInfoRepository;
 
     @Override
     public Page<SellerReviewResponse> getPendingSellers(Pageable pageable) {
@@ -78,6 +81,21 @@ public class SellerReviewServiceImpl implements SellerReviewService {
         user.setUserStatus("Active");
         user.setUpdatedAt(Instant.now());
         userRepository.save(user);
+
+        if (!ghnShopInfoRepository.existsBySellerId(sellerId)) {
+            Seller seller1 = sellerRepository.findById(sellerId)
+                    .orElseThrow(() -> new ApiException(ErrorCode.SELLER_NOT_FOUND));
+            GHNShopInfo shop = new GHNShopInfo();
+            shop.setSeller(seller1);
+            shop.setGhnToken("388e803b-bf1c-11f0-a51e-f64be07fcf0a");
+            shop.setGhnShopCode(198089);
+            shop.setGhnShopName("Cửa hàng bán đồ vip pro");
+            shop.setPickupAddress("Thái bảo, Gia Bình, Bắc Ninh");
+            shop.setPickupDistrictId(1766);
+            shop.setPickupWardCode("190712");
+
+            ghnShopInfoRepository.save(shop);
+        }
 
         // Lấy thông tin seller để gửi email
         Seller seller = sellerRepository.findById(sellerId).orElse(null);

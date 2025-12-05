@@ -9,6 +9,7 @@ import java.util.Optional;
 @Repository
 public interface GHNShopInfoRepository extends JpaRepository<GHNShopInfo, Integer> {
     Optional<GHNShopInfo> findBySellerId(Integer sellerId);
+    boolean existsBySellerId(Integer sellerId);
 }
 
 
