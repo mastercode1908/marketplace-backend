@@ -11,7 +11,7 @@ public class MessageConstants {
     // Auth
     public static final String LOGIN_SUCCESS = "Đăng nhập thành công!";
     public static final String LOGIN_FAILED = "Sai email hoặc mật khẩu!";
-    public static final String REGISTER_SUCCESS = "Đăng ký thành công! Vui lòng xác thực email.";
+    public static final String REGISTER_SUCCESS = "Đăng ký thành công! Vui lòng xác thực email, kiểm tra cả ở thư rác.";
     public static final String LOG_OUT = "Đăng xuất thành công";
     public static final String LOGIN_GOOGLE_SUCCESS = "Đăng nhập Google thành công!";
 

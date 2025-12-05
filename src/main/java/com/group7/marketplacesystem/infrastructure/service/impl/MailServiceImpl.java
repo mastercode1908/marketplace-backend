@@ -22,7 +22,7 @@ import java.time.Instant;
 
 @Service
 @Slf4j
-public class MailServiceImpl implements MailService {
+public class MailServiceImpl{
 
     private final JavaMailSender mailSender;
 
@@ -37,7 +37,7 @@ public class MailServiceImpl implements MailService {
         this.mailSender = mailSender;
     }
 
-    @Override
+//    @Override
     public void sendVerificationEmail(String toEmail, String token) {
         String verifyLink = frontendUrl + "/verify?token=" + token;
         String subject = "Xác thực tài khoản của bạn";
@@ -58,7 +58,7 @@ public class MailServiceImpl implements MailService {
         sendCustomEmail(toEmail, subject, content);
     }
 
-    @Override
+//    @Override
     public void sendResetPasswordEmail(String toEmail, String token) {
         String resetLink = frontendUrl + "/reset-password?token=" + token;
         String subject = "Đặt lại mật khẩu";
@@ -81,7 +81,7 @@ public class MailServiceImpl implements MailService {
         sendCustomEmail(toEmail, subject, content);
     }
 
-    @Override
+//    @Override
     public void sendCustomEmail(String toEmail, String subject, String content) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
@@ -119,7 +119,7 @@ public class MailServiceImpl implements MailService {
         sendCustomEmail(toEmail, subject, content);
     }
 
-    @Override
+//    @Override
     public void sendReportEmailToSeller(String toEmail, Productreport productreport) {
         if (productreport == null || productreport.getProduct() == null) {
             throw new ApiException(ErrorCode.PRODUCT_REPORT_NOT_FOUND);
@@ -148,7 +148,7 @@ public class MailServiceImpl implements MailService {
     }
 
 
-    @Override
+//    @Override
     public void sendResultReportEmailToBuyer(String toEmail, Productreport productreport) {
 
         if (productreport == null || productreport.getProduct() == null) {
@@ -180,7 +180,7 @@ public class MailServiceImpl implements MailService {
     }
 
 
-    @Override
+//    @Override
     public void sendResultReportEmailToSeller(String toEmail, Productreport productreport) {
         if (productreport == null || productreport.getProduct() == null) {
             throw new ApiException(ErrorCode.PRODUCT_REPORT_NOT_FOUND);
@@ -239,8 +239,8 @@ public class MailServiceImpl implements MailService {
         sendCustomEmail(toEmail, subject, content);
     }
 
-    @Async
-    @Override
+//    @Async
+//    @Override
     public void sendNotificationEmailToUsers(String toEmail, Notification notification) {
         String subject = "[Thông báo từ Marketplace System] " + notification.getTitle();
         String shopLink = frontendUrl + "/home";
@@ -291,7 +291,7 @@ public class MailServiceImpl implements MailService {
         sendCustomEmail(toEmail, subject, content);
     }
 
-    @Override
+//    @Override
     public void sendSellerRejectionEmail(String toEmail, String shopName, String rejectionNote) {
         String subject = "Thông báo về đơn đăng ký seller";
         String content = """
@@ -315,7 +315,7 @@ public class MailServiceImpl implements MailService {
         sendCustomEmail(toEmail, subject, content);
     }
 
-    @Override
+//    @Override
     public void sendOrderCancelledBySellerEmail(String toEmail, Integer orderId, String sellerName, String reason) {
         String subject = "Thông báo: Đơn hàng #" + orderId + " đã bị hủy bởi người bán";
         String orderLink = frontendUrl + "/user/orders/" + orderId;
@@ -349,8 +349,8 @@ public class MailServiceImpl implements MailService {
         sendCustomEmail(toEmail, subject, content);
     }
 
-    @Async
-    @Override
+//    @Async
+//    @Override
     public void sendBannerRejectionEmail(String toEmail, Banner banner, String rejectionReason) {
 
         if (banner == null) {
@@ -386,8 +386,8 @@ public class MailServiceImpl implements MailService {
         sendCustomEmail(toEmail, subject, content);
     }
 
-    @Async
-    @Override
+//    @Async
+//    @Override
     public void sendBannerApprovedEmail(String toEmail, String banner) {
         String subject = "Đơn đăng ký banner quảng cáo của bạn đã được duyệt";
         String content = """
