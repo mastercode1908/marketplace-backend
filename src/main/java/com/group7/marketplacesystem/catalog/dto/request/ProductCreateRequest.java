@@ -28,7 +28,7 @@ public class ProductCreateRequest {
     private String description;
 
     @NotNull(message = "Giá sản phẩm không được để trống")
-    @DecimalMin(value = "0.01", message = "Giá sản phẩm phải lớn hơn 0")
+    @DecimalMin(value = "1000", message = "Giá sản phẩm phải lớn hơn 1000")
     @DecimalMax(value = "1000000000", message = "Giá sản phẩm không được vượt quá 1 tỷ VNĐ")
     private BigDecimal price;
 
@@ -38,7 +38,7 @@ public class ProductCreateRequest {
     private Integer weight; // gram
 
     @NotNull(message = "Số lượng tồn kho không được để trống")
-    @Min(value = 0, message = "Số lượng tồn kho không được âm")
+    @Min(value = 1, message = "Số lượng tồn kho không được âm")
     @Max(value = 100000, message = "Số lượng tồn kho không được vượt quá 100.000")
     private Integer stockQuantity;
 
