@@ -146,10 +146,16 @@ public class BannerServiceImpl implements BannerService {
         }
 
         Instant maxEndDate = request.getStartDate().plusSeconds(365L * 24 * 60 * 60); // max 1 năm
-        if (request.getEndDate().isAfter(maxEndDate)
-                && request.getEndDate().isAfter(activePackage.getEndDate())
-                && request.getEndDate().isBefore(now)) {
+        if (request.getEndDate().isAfter(maxEndDate)) {
             throw new ApiException(ErrorCode.INVALID_END_DATE);
+        }
+
+        if (request.getEndDate().isBefore(now)) {
+            throw new ApiException(ErrorCode.INVALID_END_DATE);
+        }
+
+        if (request.getEndDate().isAfter(activePackage.getEndDate())) {
+            throw new ApiException(ErrorCode.INVALID_BANNER_END_DATE);
         }
 
         if ((banner.getStatus() != BannerStatus.PENDING && banner.getStatus() != BannerStatus.PAUSED)

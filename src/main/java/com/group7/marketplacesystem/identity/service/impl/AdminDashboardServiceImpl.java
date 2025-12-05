@@ -617,6 +617,103 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             }
         }
         
+        // Calculate Service Package Revenue
+        BigDecimal totalServicePackageRevenue = paymentRepository.getTotalServicePackageRevenue(
+            startInstant, endInstant, filter.getSellerId());
+        if (totalServicePackageRevenue == null) totalServicePackageRevenue = BigDecimal.ZERO;
+        
+        Long totalServicePackages = paymentRepository.getTotalServicePackageCount(
+            startInstant, endInstant, filter.getSellerId());
+        if (totalServicePackages == null) totalServicePackages = 0L;
+        
+        // Get service package revenue by period
+        List<AdminRevenueResponse.ServicePackageRevenueDataPoint> servicePackageRevenueByPeriod = new ArrayList<>();
+        String dateFormat;
+        switch (periodType.toLowerCase()) {
+            case "monthly":
+                dateFormat = "%Y-%m";
+                break;
+            case "quarterly":
+                dateFormat = "%Y-Q%q";
+                break;
+            case "yearly":
+                dateFormat = "%Y";
+                break;
+            default: // daily
+                dateFormat = "%Y-%m-%d";
+        }
+        
+        List<Object[]> servicePackagePeriodData = paymentRepository.getServicePackageRevenueByPeriod(
+            startInstant, endInstant, filter.getSellerId(), dateFormat);
+        
+        for (Object[] row : servicePackagePeriodData) {
+            if (row.length < 3) continue;
+            
+            String period = row[0] != null ? row[0].toString() : "";
+            Number revenueNum = (Number) row[1];
+            BigDecimal revenue = revenueNum != null ? 
+                BigDecimal.valueOf(revenueNum.doubleValue()) : BigDecimal.ZERO;
+            Number packageCountNum = (Number) row[2];
+            Long packageCount = packageCountNum != null ? packageCountNum.longValue() : 0L;
+            
+            servicePackageRevenueByPeriod.add(AdminRevenueResponse.ServicePackageRevenueDataPoint.builder()
+                .period(period)
+                .revenue(revenue)
+                .packageCount(packageCount)
+                .build());
+        }
+        
+        // Get top sellers by service package revenue
+        List<AdminRevenueResponse.TopSellerServicePackageRevenue> topSellersByServicePackage = new ArrayList<>();
+        List<Object[]> sellerPackageData = paymentRepository.getServicePackageRevenueBySeller(
+            startInstant, endInstant);
+        
+        // Filter by seller if needed
+        if (filter.getSellerId() != null) {
+            sellerPackageData = sellerPackageData.stream()
+                .filter(row -> {
+                    Number sellerIdNum = (Number) row[0];
+                    return sellerIdNum != null && sellerIdNum.intValue() == filter.getSellerId();
+                })
+                .collect(Collectors.toList());
+        }
+        
+        // Limit to top sellers
+        sellerPackageData = sellerPackageData.stream()
+            .sorted((a, b) -> {
+                BigDecimal revenueA = BigDecimal.valueOf(((Number) a[1]).doubleValue());
+                BigDecimal revenueB = BigDecimal.valueOf(((Number) b[1]).doubleValue());
+                return revenueB.compareTo(revenueA);
+            })
+            .limit(topLimit)
+            .collect(Collectors.toList());
+        
+        for (Object[] row : sellerPackageData) {
+            if (row.length < 3) continue;
+            
+            Number sellerIdNum = (Number) row[0];
+            Integer sellerId = sellerIdNum != null ? sellerIdNum.intValue() : null;
+            if (sellerId == null) continue;
+            
+            Number revenueNum = (Number) row[1];
+            BigDecimal sellerRevenue = revenueNum != null ? 
+                BigDecimal.valueOf(revenueNum.doubleValue()) : BigDecimal.ZERO;
+            
+            Number packageCountNum = (Number) row[2];
+            Long packageCount = packageCountNum != null ? packageCountNum.longValue() : 0L;
+            
+            Seller seller = sellerRepository.findById(sellerId).orElse(null);
+            String shopName = seller != null && seller.getShopName() != null ? 
+                seller.getShopName() : "N/A";
+            
+            topSellersByServicePackage.add(AdminRevenueResponse.TopSellerServicePackageRevenue.builder()
+                .sellerId(sellerId)
+                .shopName(shopName)
+                .revenue(sellerRevenue)
+                .packageCount(packageCount)
+                .build());
+        }
+        
         return AdminRevenueResponse.builder()
             .totalRevenue(totalRevenue)
             .commission(commission)
@@ -626,6 +723,10 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             .topSellers(topSellers)
             .revenueByCategory(revenueByCategory)
             .sellerStats(sellerStats)
+            .totalServicePackageRevenue(totalServicePackageRevenue)
+            .totalServicePackages(totalServicePackages)
+            .servicePackageRevenueByPeriod(servicePackageRevenueByPeriod)
+            .topSellersByServicePackage(topSellersByServicePackage)
             .build();
     }
     

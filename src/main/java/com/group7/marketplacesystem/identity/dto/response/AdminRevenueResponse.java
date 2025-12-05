@@ -37,6 +37,12 @@ public class AdminRevenueResponse {
     // Thống kê theo seller (nếu filter)
     private SellerRevenueStats sellerStats;
     
+    // Doanh thu từ gói dịch vụ
+    private BigDecimal totalServicePackageRevenue;
+    private Long totalServicePackages;
+    private List<ServicePackageRevenueDataPoint> servicePackageRevenueByPeriod;
+    private List<TopSellerServicePackageRevenue> topSellersByServicePackage;
+    
     @Data
     @Builder
     @NoArgsConstructor
@@ -83,6 +89,27 @@ public class AdminRevenueResponse {
         private BigDecimal totalCommission;
         private Long totalOrders;
         private BigDecimal averageOrderValue;
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ServicePackageRevenueDataPoint {
+        private String period; // "YYYY-MM-DD" hoặc "YYYY-MM" hoặc "YYYY-Q1"
+        private BigDecimal revenue; // Doanh thu từ gói dịch vụ
+        private Long packageCount; // Số gói đã bán
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TopSellerServicePackageRevenue {
+        private Integer sellerId;
+        private String shopName;
+        private BigDecimal revenue; // Doanh thu từ gói dịch vụ
+        private Long packageCount; // Số gói đã mua
     }
 }
 

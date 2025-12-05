@@ -52,6 +52,58 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
             "GROUP BY o.seller_id", nativeQuery = true)
     List<Object[]> getPaymentAmountsBySeller(@Param("startDate") Instant startDate, 
                                               @Param("endDate") Instant endDate);
+
+    // Service Package Revenue Queries
+    @Query(value = "SELECT COALESCE(SUM(p.amount), 0) " +
+            "FROM payment p " +
+            "INNER JOIN payment_session ps ON p.target_id = ps.target_id AND p.target_type = 'Package' AND ps.target_type = 'Package' " +
+            "WHERE p.created_at >= :startDate AND p.created_at < :endDate " +
+            "AND p.status = 'Paid' " +
+            "AND p.target_type = 'Package' " +
+            "AND (:sellerId IS NULL OR ps.seller_id = :sellerId)", nativeQuery = true)
+    BigDecimal getTotalServicePackageRevenue(@Param("startDate") Instant startDate,
+                                              @Param("endDate") Instant endDate,
+                                              @Param("sellerId") Integer sellerId);
+
+    @Query(value = "SELECT COUNT(DISTINCT p.payment_id) " +
+            "FROM payment p " +
+            "INNER JOIN payment_session ps ON p.target_id = ps.target_id AND p.target_type = 'Package' AND ps.target_type = 'Package' " +
+            "WHERE p.created_at >= :startDate AND p.created_at < :endDate " +
+            "AND p.status = 'Paid' " +
+            "AND p.target_type = 'Package' " +
+            "AND (:sellerId IS NULL OR ps.seller_id = :sellerId)", nativeQuery = true)
+    Long getTotalServicePackageCount(@Param("startDate") Instant startDate,
+                                     @Param("endDate") Instant endDate,
+                                     @Param("sellerId") Integer sellerId);
+
+    @Query(value = "SELECT DATE_FORMAT(p.created_at, :dateFormat) as period, " +
+            "COALESCE(SUM(p.amount), 0) as revenue, " +
+            "COUNT(DISTINCT p.payment_id) as packageCount " +
+            "FROM payment p " +
+            "INNER JOIN payment_session ps ON p.target_id = ps.target_id AND p.target_type = 'Package' AND ps.target_type = 'Package' " +
+            "WHERE p.created_at >= :startDate AND p.created_at < :endDate " +
+            "AND p.status = 'Paid' " +
+            "AND p.target_type = 'Package' " +
+            "AND (:sellerId IS NULL OR ps.seller_id = :sellerId) " +
+            "GROUP BY period " +
+            "ORDER BY period", nativeQuery = true)
+    List<Object[]> getServicePackageRevenueByPeriod(@Param("startDate") Instant startDate,
+                                                     @Param("endDate") Instant endDate,
+                                                     @Param("sellerId") Integer sellerId,
+                                                     @Param("dateFormat") String dateFormat);
+
+    @Query(value = "SELECT ps.seller_id, " +
+            "COALESCE(SUM(p.amount), 0) as revenue, " +
+            "COUNT(DISTINCT p.payment_id) as packageCount " +
+            "FROM payment p " +
+            "INNER JOIN payment_session ps ON p.target_id = ps.target_id AND p.target_type = 'Package' AND ps.target_type = 'Package' " +
+            "WHERE p.created_at >= :startDate AND p.created_at < :endDate " +
+            "AND p.status = 'Paid' " +
+            "AND p.target_type = 'Package' " +
+            "GROUP BY ps.seller_id " +
+            "ORDER BY revenue DESC", nativeQuery = true)
+    List<Object[]> getServicePackageRevenueBySeller(@Param("startDate") Instant startDate,
+                                                     @Param("endDate") Instant endDate);
 }
 
 

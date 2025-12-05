@@ -44,7 +44,7 @@ public enum ErrorCode {
     DELIVERY_NOT_FOUND(3013, "Delivery not found", HttpStatus.NOT_FOUND),
     COD_AMOUNT_EXCEEDED(3014, "COD amount exceeds the maximum limit of 50,000,000 VND", HttpStatus.BAD_REQUEST),
     QUANTITY_EXCEEDED_STOCK(3015, "The quantity of this product in stock is insufficient. Please check your shopping cart again.", HttpStatus.BAD_REQUEST),
-    GHN_SHOP_INFO_NOT_FOUND(3016, "GHN shop information not found. Please configure your GHN shop info first", HttpStatus.BAD_REQUEST),
+    GHN_SHOP_INFO_NOT_FOUND(3016, "Không tìm thấy thông tin cửa hàng GHN. Vui lòng cấu hình thông tin cửa hàng GHN của cửa hàng trước.", HttpStatus.BAD_REQUEST),
     PRODUCT_REPORT_NOT_FOUND(3017, "Product report not found", HttpStatus.NOT_FOUND),
     GHN_SHOP_NOT_FOUND(3018, "The shop with this Shop ID was not found in GHN. Please check your Token and Shop ID again.", HttpStatus.BAD_REQUEST),
     GHN_TOKEN_INVALID(3019, "GHN Token is invalid or does not have access. Please check Token again.", HttpStatus.BAD_REQUEST),
