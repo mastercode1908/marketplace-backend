@@ -6,9 +6,14 @@ import java.util.List;
 
 public interface OpenAIService {
     double[] generateEmbedding(String text);
+
     String generateChatResponse(List<ChatMessage> messages);
-    String generateContextualResponse(String userMessage, String context);
+
+    String generateContextualResponse(String userMessage, String context, boolean hasProducts);
+
     double[] generateMockEmbedding(String text);
+
     String generateMockResponse(List<ChatMessage> messages);
-    String generateMockContextualResponse(String userMessage, String context);
+
+    String generateMockContextualResponse(String userMessage, String context, boolean hasProducts);
 }

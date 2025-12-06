@@ -109,7 +109,7 @@ public class OpenAIServiceImpl implements OpenAIService {
                     .model(chatModel)
                     .messages(messages)
                     .temperature(0.7)
-                    .maxTokens(500)
+                    .maxTokens(300) // Reduced from 500 to 300 for shorter responses
                     .build();
 
             ChatCompletionResult result = openAiService.createChatCompletion(request);
@@ -134,32 +134,47 @@ public class OpenAIServiceImpl implements OpenAIService {
      * 
      * @param userMessage User's message
      * @param context     Retrieved context from vector search
+     * @param hasProducts Whether products are included in context
      * @return AI response text
      */
     @Override
-    public String generateContextualResponse(String userMessage, String context) {
+    public String generateContextualResponse(String userMessage, String context, boolean hasProducts) {
         if (mockMode) {
             log.warn("MOCK MODE: Generating dummy contextual response");
-            return generateMockContextualResponse(userMessage, context);
+            return generateMockContextualResponse(userMessage, context, hasProducts);
         }
 
         List<ChatMessage> messages = new ArrayList<>();
 
-        // System message with context - improved prompt
-        String systemPrompt = "Bạn là trợ lý mua sắm thân thiện và chuyên nghiệp của OnlineMarketPlace. " +
-                "Nhiệm vụ của bạn là tư vấn sản phẩm cho khách hàng một cách tự nhiên và hữu ích.\n\n" +
-                "THÔNG TIN SẢN PHẨM:\n" +
-                context + "\n\n" +
-                "HƯỚNG DẪN TRẢ LỜI:\n" +
-                "1. Trả lời bằng tiếng Việt tự nhiên, thân thiện như đang trò chuyện\n" +
-                "2. KHÔNG SỬ DỤNG ký hiệu markdown như **, ***, __, ##, v.v.\n" +
-                "3. Viết văn bản thuần túy, dễ đọc, không cần định dạng đặc biệt\n" +
-                "4. Nếu khách hàng hỏi về sản phẩm cụ thể, hãy giới thiệu các sản phẩm phù hợp từ danh sách\n" +
-                "5. Nếu có nhiều lựa chọn, gợi ý 2-3 sản phẩm tốt nhất với lý do rõ ràng\n" +
-                "6. Nếu thông tin không đủ hoặc không có sản phẩm phù hợp, hãy lịch sự thông báo và gợi ý tìm kiếm khác\n"
-                +
-                "7. Giữ câu trả lời ngắn gọn, súc tích, khoảng 2-4 câu\n\n" +
-                "Hãy trả lời câu hỏi của khách hàng một cách tự nhiên và hữu ích nhất.";
+        // Improved system prompt for better formatting
+        String systemPrompt;
+
+        if (hasProducts) {
+            systemPrompt = "Bạn là trợ lý mua sắm thân thiện của OnlineMarketPlace.\n\n" +
+                    "THÔNG TIN SẢN PHẨM:\n" +
+                    context + "\n\n" +
+                    "HƯỚNG DẪN TRẢ LỜI:\n" +
+                    "- TUYỆT ĐỐI KHÔNG chào khách hàng hoặc viết lời mở đầu kiểu 'Chào bạn'.\n" +
+                    "- Trả lời trực tiếp, tự nhiên, thân thiện như đang trò chuyện.\n" +
+                    "- Xưng hô dùng 'Bạn'.\n" +
+                    "- Liệt kê sản phẩm theo bullet points (•), mỗi sản phẩm 1 block, gồm:\n" +
+                    "  • Tên sản phẩm\n" +
+                    "    Giá: <giá>\n" +
+                    "    Đặc điểm: <đặc điểm>\n" +
+                    "- Giữ câu trả lời ngắn gọn, súc tích, khoảng 2-3 câu tổng thể.\n" +
+                    "- Nếu muốn, thêm 1 câu dẫn tự nhiên trước danh sách nhưng không chào.";
+        } else {
+            // No products - general conversation
+            systemPrompt = "Bạn là trợ lý mua sắm thân thiện của OnlineMarketPlace.\n\n" +
+                    "HƯỚNG DẪN TRẢ LỜI:\n" +
+                    "- TUYỆT ĐỐI KHÔNG chào khách hàng hoặc viết lời mở đầu kiểu 'Chào bạn'.\n" +
+                    "- Trả lời tự nhiên, thân thiện, như đang trò chuyện với khách hàng.\n" +
+                    "- Xưng hô dùng 'Bạn'.\n" +
+                    "- Nếu người dùng hỏi về ngoại hình, sở thích, đánh giá cá nhân: trả lời tự nhiên, vui vẻ, thân thiện, không đề cập đến sản phẩm.\n" +
+                    "- Giữ câu trả lời ngắn gọn, súc tích, khoảng 2-3 câu tổng thể.\n" +
+                    "- Nếu khách hỏi về bạn: Giới thiệu ngắn gọn, thân thiện.\n" +
+                    "- Nếu khách cảm ơn: Đáp lại lịch sự, tự nhiên.";
+        }
 
         messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
         messages.add(new ChatMessage(ChatMessageRole.USER.value(), userMessage));
@@ -207,26 +222,24 @@ public class OpenAIServiceImpl implements OpenAIService {
      * Generate mock contextual response
      */
     @Override
-    public String generateMockContextualResponse(String userMessage, String context) {
+    public String generateMockContextualResponse(String userMessage, String context, boolean hasProducts) {
+        if (!hasProducts) {
+            // Handle greetings and general questions
+            if (userMessage.toLowerCase().contains("chào") || userMessage.toLowerCase().contains("hello")) {
+                return "Xin chào! Tôi có thể giúp bạn tìm sản phẩm nào hôm nay?";
+            }
+            if (userMessage.toLowerCase().contains("cảm ơn")) {
+                return "Không có gì! Rất vui được giúp bạn.";
+            }
+            return "Tôi có thể giúp bạn tìm kiếm sản phẩm. Hãy cho tôi biết bạn cần gì!";
+        }
+
         String[] templates = {
-                "Dựa trên yêu cầu của bạn, tôi gợi ý các sản phẩm sau đây phù hợp với nhu cầu %s.",
-                "Chúng tôi có một số sản phẩm tuyệt vời cho %s. Hãy xem các gợi ý bên dưới!",
-                "Tôi đã tìm thấy một số sản phẩm phù hợp với %s. Bạn có thể xem chi tiết ở bên dưới.",
-                "Để đáp ứng nhu cầu %s, tôi có những gợi ý sau cho bạn.",
-                "Các sản phẩm dưới đây sẽ phù hợp với yêu cầu %s của bạn."
+                "Có 3 sản phẩm phù hợp:\\n• Option 1 - Giá tốt\\n• Option 2 - Chất lượng cao\\n• Option 3 - Phổ biến nhất",
+                "Tôi tìm thấy một số lựa chọn:\\n• Sản phẩm A - Đáng tin cậy\\n• Sản phẩm B - Giá hợp lý\\n• Sản phẩm C - Bán chạy",
         };
 
         Random random = new Random();
-        String template = templates[random.nextInt(templates.length)];
-
-        // Extract simple description from user message
-        String description = userMessage.toLowerCase()
-                .replace("tìm", "")
-                .replace("mua", "")
-                .replace("cần", "")
-                .replace("muốn", "")
-                .trim();
-
-        return String.format(template, description);
+        return templates[random.nextInt(templates.length)];
     }
 }

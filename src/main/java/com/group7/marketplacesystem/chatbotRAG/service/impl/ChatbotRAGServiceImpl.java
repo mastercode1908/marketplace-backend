@@ -81,19 +81,26 @@ public class ChatbotRAGServiceImpl implements ChatbotRAGService {
         log.info("Generating RAG response for message: '{}'", userMessage);
 
         try {
-            // Step 1: Retrieve relevant products via vector search
-            List<ProductInfo> relevantProducts = searchProducts(userMessage, 5);
+            // Step 1: Classify query to determine if product search is needed
+            boolean needsProductSearch = shouldSearchProducts(userMessage);
+            List<ProductInfo> relevantProducts = new ArrayList<>();
 
-            // Step 2: Build context from retrieved products
+            if (needsProductSearch) {
+                // Only search products if query is product-related
+                relevantProducts = searchProducts(userMessage, 3); // Reduced from 5 to 3
+            }
+
+            // Step 2: Build context from retrieved products (only if any found)
             String context = buildContext(relevantProducts);
 
             // Step 3: Generate response with context
             String aiResponse;
-            if (relevantProducts.isEmpty()) {
+            if (needsProductSearch && relevantProducts.isEmpty()) {
                 aiResponse = "Xin lỗi, tôi không tìm thấy sản phẩm phù hợp với yêu cầu của bạn. " +
                         "Bạn có thể thử mô tả chi tiết hơn hoặc tìm kiếm theo danh mục khác.";
             } else {
-                aiResponse = openAIService.generateContextualResponse(userMessage, context);
+                aiResponse = openAIService.generateContextualResponse(userMessage, context,
+                        !relevantProducts.isEmpty());
             }
 
             // Step 4: Build response
@@ -148,6 +155,39 @@ public class ChatbotRAGServiceImpl implements ChatbotRAGService {
         }
 
         return context.toString();
+    }
+
+    /**
+     * Determine if query needs product search.
+     * Returns true for product-related queries, false for greetings/general
+     * questions.
+     */
+    private boolean shouldSearchProducts(String userMessage) {
+        String lowerMessage = userMessage.toLowerCase();
+
+        // Greetings and general conversation - no products needed
+        if (lowerMessage.matches(".*\\b(xin chào|chào|hello|hi|hey|tạm biệt|bye|cảm ơn|thanks|được|ok|ừ)\\b.*")) {
+            return false;
+        }
+
+        // Questions about how chatbot works - no products
+        if (lowerMessage.contains("bạn là ai") || lowerMessage.contains("làm gì") ||
+                lowerMessage.contains("giúp gì") || lowerMessage.contains("có thể")) {
+            return false;
+        }
+
+        // Product-related keywords
+        if (lowerMessage
+                .matches(".*\\b(tìm|mua|cần|muốn|có|bán|giá|sản phẩm|hàng|laptop|điện thoại|giày|áo|quần)\\b.*")) {
+            return true;
+        }
+
+        if (lowerMessage.matches(".*\\b(đẹp trai|xinh|ngầu|tốt|tệ)\\b.*")) {
+            return false; // Đây là câu hỏi về người dùng, không liên quan sản phẩm
+        }
+
+        // Default: search products (better to show than not show)
+        return true;
     }
 
     /**
