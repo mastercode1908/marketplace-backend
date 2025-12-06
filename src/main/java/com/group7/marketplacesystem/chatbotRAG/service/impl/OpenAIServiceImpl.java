@@ -46,12 +46,6 @@ public class OpenAIServiceImpl implements OpenAIService {
         this.chatModel = chatModel;
     }
 
-    /**
-     * Generate vector embedding for given text.
-     * 
-     * @param text Input text to embed
-     * @return Embedding vector as double array (dimension 1536)
-     */
     @Override
     public double[] generateEmbedding(String text) {
         if (mockMode) {
@@ -89,12 +83,6 @@ public class OpenAIServiceImpl implements OpenAIService {
         }
     }
 
-    /**
-     * Generate chat response using GPT with given messages.
-     * 
-     * @param messages Conversation history
-     * @return AI response text
-     */
     @Override
     public String generateChatResponse(List<ChatMessage> messages) {
         if (mockMode) {
@@ -109,7 +97,7 @@ public class OpenAIServiceImpl implements OpenAIService {
                     .model(chatModel)
                     .messages(messages)
                     .temperature(0.7)
-                    .maxTokens(300) // Reduced from 500 to 300 for shorter responses
+                    .maxTokens(400) // Moderate token limit
                     .build();
 
             ChatCompletionResult result = openAiService.createChatCompletion(request);
@@ -129,14 +117,6 @@ public class OpenAIServiceImpl implements OpenAIService {
         }
     }
 
-    /**
-     * Generate chat response with context (for RAG).
-     * 
-     * @param userMessage User's message
-     * @param context     Retrieved context from vector search
-     * @param hasProducts Whether products are included in context
-     * @return AI response text
-     */
     @Override
     public String generateContextualResponse(String userMessage, String context, boolean hasProducts) {
         if (mockMode) {
@@ -145,35 +125,35 @@ public class OpenAIServiceImpl implements OpenAIService {
         }
 
         List<ChatMessage> messages = new ArrayList<>();
-
-        // Improved system prompt for better formatting
         String systemPrompt;
 
         if (hasProducts) {
-            systemPrompt = "Bạn là trợ lý mua sắm thân thiện của OnlineMarketPlace.\n\n" +
-                    "THÔNG TIN SẢN PHẨM:\n" +
+            systemPrompt = "Bạn là trợ lý mua sắm thông minh của OnlineMarketPlace.\n\n" +
+                    "DỮ LIỆU SẢN PHẨM KHẢ DỤNG:\n" +
                     context + "\n\n" +
-                    "HƯỚNG DẪN TRẢ LỜI:\n" +
-                    "- TUYỆT ĐỐI KHÔNG chào khách hàng hoặc viết lời mở đầu kiểu 'Chào bạn'.\n" +
-                    "- Trả lời trực tiếp, tự nhiên, thân thiện như đang trò chuyện.\n" +
-                    "- Xưng hô dùng 'Bạn'.\n" +
-                    "- Liệt kê sản phẩm theo bullet points (•), mỗi sản phẩm 1 block, gồm:\n" +
+                    "NHIỆM VỤ:\n" +
+                    "1. Trả lời câu hỏi của khách hàng dựa trên dữ liệu sản phẩm trên. Xưng hô là 'Bạn'.\n" +
+                    "2. Nếu khách hỏi mua/tìm sản phẩm: Hãy chọn ra 1-3 sản phẩm phù hợp nhất để giới thiệu.\n" +
+                    "3. Format câu trả lời:\n" +
+                    "   - Mở đầu 1 câu dẫn tự nhiên (không chào hỏi rườm rà).\n" +
+                    "   - Liệt kê sản phẩm theo bullet points (•), mỗi sản phẩm 1 block, gồm:\n" +
                     "  • Tên sản phẩm\n" +
                     "    Giá: <giá>\n" +
-                    "    Đặc điểm: <đặc điểm>\n" +
-                    "- Giữ câu trả lời ngắn gọn, súc tích, khoảng 2-3 câu tổng thể.\n" +
-                    "- Nếu muốn, thêm 1 câu dẫn tự nhiên trước danh sách nhưng không chào.";
+                    "    Đặc điểm: <mô tả ngắn gọn, nổi bật nhất>\n" +
+                    "4. QUAN TRỌNG NHẤT - SYNC DỮ LIỆU:\n" +
+                    "   - Cuối cùng, BẮT BUỘC phải liệt kê danh sách ID của các sản phẩm bạn vừa giới thiệu theo định dạng: SELECTED_IDS: [id1, id2, id3]\n"
+                    +
+                    "   - Chỉ liệt kê ID của những sản phẩm bạn thực sự nhắc đến trong câu trả lời.\n" +
+                    "   - Ví dụ output cuối cùng: ... SELECTED_IDS: [101, 105]";
         } else {
-            // No products - general conversation
             systemPrompt = "Bạn là trợ lý mua sắm thân thiện của OnlineMarketPlace.\n\n" +
-                    "HƯỚNG DẪN TRẢ LỜI:\n" +
-                    "- TUYỆT ĐỐI KHÔNG chào khách hàng hoặc viết lời mở đầu kiểu 'Chào bạn'.\n" +
-                    "- Trả lời tự nhiên, thân thiện, như đang trò chuyện với khách hàng.\n" +
-                    "- Xưng hô dùng 'Bạn'.\n" +
-                    "- Nếu người dùng hỏi về ngoại hình, sở thích, đánh giá cá nhân: trả lời tự nhiên, vui vẻ, thân thiện, không đề cập đến sản phẩm.\n" +
-                    "- Giữ câu trả lời ngắn gọn, súc tích, khoảng 2-3 câu tổng thể.\n" +
-                    "- Nếu khách hỏi về bạn: Giới thiệu ngắn gọn, thân thiện.\n" +
-                    "- Nếu khách cảm ơn: Đáp lại lịch sự, tự nhiên.";
+                    "HƯỚNG DẪN:\n" +
+                    "- Trả lời tự nhiên, ngắn gọn (2-3 câu).\n" +
+                    "- Không chào hỏi kiểu 'Chatbot xin chào'. Xưng hô 'Mình' hoặc 'Bạn'.\n" +
+                    "- Nếu khách chào: Chào lại thân thiện.\n" +
+                    "- Nếu khách hỏi linh tinh (về bản thân bạn, thời tiết, đùa giỡn): Trả lời vui vẻ, thông minh, không cần lái về bán hàng nếu không liên quan.\n"
+                    +
+                    "- TUYỆT ĐỐI KHÔNG bịa đặt sản phẩm nếu không có dữ liệu.";
         }
 
         messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
@@ -184,16 +164,13 @@ public class OpenAIServiceImpl implements OpenAIService {
 
     // ============ MOCK METHODS ============
 
-    /**
-     * Generate mock embedding (random but consistent for same text)
-     */
     @Override
     public double[] generateMockEmbedding(String text) {
-        Random random = new Random(text.hashCode()); // Consistent seed
+        Random random = new Random(text.hashCode());
         double[] embedding = new double[1536];
 
         for (int i = 0; i < 1536; i++) {
-            embedding[i] = (random.nextDouble() - 0.5) * 2; // Range: -1 to 1
+            embedding[i] = (random.nextDouble() - 0.5) * 2;
         }
 
         // Normalize
@@ -209,37 +186,25 @@ public class OpenAIServiceImpl implements OpenAIService {
         return embedding;
     }
 
-    /**
-     * Generate mock chat response
-     */
     @Override
     public String generateMockResponse(List<ChatMessage> messages) {
         String userMessage = messages.get(messages.size() - 1).getContent();
         return "Mock response for: " + userMessage;
     }
 
-    /**
-     * Generate mock contextual response
-     */
     @Override
     public String generateMockContextualResponse(String userMessage, String context, boolean hasProducts) {
         if (!hasProducts) {
-            // Handle greetings and general questions
             if (userMessage.toLowerCase().contains("chào") || userMessage.toLowerCase().contains("hello")) {
-                return "Xin chào! Tôi có thể giúp bạn tìm sản phẩm nào hôm nay?";
+                return "Xin chào! Mình có thể giúp gì cho bạn hôm nay?";
             }
-            if (userMessage.toLowerCase().contains("cảm ơn")) {
-                return "Không có gì! Rất vui được giúp bạn.";
-            }
-            return "Tôi có thể giúp bạn tìm kiếm sản phẩm. Hãy cho tôi biết bạn cần gì!";
+            return "Mình là trợ lý ảo, sẵn sàng hỗ trợ bạn tìm kiếm sản phẩm!";
         }
 
-        String[] templates = {
-                "Có 3 sản phẩm phù hợp:\\n• Option 1 - Giá tốt\\n• Option 2 - Chất lượng cao\\n• Option 3 - Phổ biến nhất",
-                "Tôi tìm thấy một số lựa chọn:\\n• Sản phẩm A - Đáng tin cậy\\n• Sản phẩm B - Giá hợp lý\\n• Sản phẩm C - Bán chạy",
-        };
-
-        Random random = new Random();
-        return templates[random.nextInt(templates.length)];
+        // Mock returning IDs
+        return "Có vài sản phẩm này hay lắm:\n" +
+                "• MacBook Pro M1 - 30tr\n" +
+                "• Dell XPS 15 - 35tr\n" +
+                "SELECTED_IDS: [1, 2]";
     }
 }

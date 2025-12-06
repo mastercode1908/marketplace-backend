@@ -9,7 +9,6 @@ import com.group7.marketplacesystem.chatbotRAG.dto.response.ProductInfo;
 import com.group7.marketplacesystem.chatbotRAG.entity.ProductVector;
 import com.group7.marketplacesystem.chatbotRAG.repository.ProductVectorRepository;
 import com.group7.marketplacesystem.chatbotRAG.service.ChatbotRAGService;
-import com.group7.marketplacesystem.chatbotRAG.service.GeminiAIService;
 import com.group7.marketplacesystem.chatbotRAG.service.OpenAIService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,34 +31,19 @@ public class ChatbotRAGServiceImpl implements ChatbotRAGService {
     private final ProductVectorRepository productVectorRepository;
     private final ProductRepository productRepository;
     private final ProductmediaRepository productmediaRepository;
-    // private final GeminiAIService geminiAIService;
     private final OpenAIService openAIService;
 
-    /**
-     * Semantic search for products using vector similarity.
-     * 
-     * @param query User's search query
-     * @param topK  Number of results to return
-     * @return List of similar products
-     */
     @Override
     public List<ProductInfo> searchProducts(String query, int topK) {
         log.info("Searching products for query: '{}', topK: {}", query, topK);
 
         try {
-            // Generate embedding for query
             double[] queryEmbedding = openAIService.generateEmbedding(query);
-
-            // Convert to pgvector format
             String embeddingVector = convertToVectorString(queryEmbedding);
-
-            // Find similar vectors
-            List<ProductVector> similarVectors = productVectorRepository.findTopKSimilar(
-                    embeddingVector, topK);
+            List<ProductVector> similarVectors = productVectorRepository.findTopKSimilar(embeddingVector, topK);
 
             log.info("Found {} similar products", similarVectors.size());
 
-            // Convert to ProductInfo DTOs
             return similarVectors.stream()
                     .map(this::convertToProductInfo)
                     .collect(Collectors.toList());
@@ -70,30 +54,20 @@ public class ChatbotRAGServiceImpl implements ChatbotRAGService {
         }
     }
 
-    /**
-     * Generate chatbot response using RAG pipeline.
-     * 
-     * @param userMessage User's message
-     * @return ChatResponse with AI message and relevant products
-     */
     @Override
     public ChatResponse generateResponse(String userMessage) {
         log.info("Generating RAG response for message: '{}'", userMessage);
 
         try {
-            // Step 1: Classify query to determine if product search is needed
             boolean needsProductSearch = shouldSearchProducts(userMessage);
             List<ProductInfo> relevantProducts = new ArrayList<>();
 
             if (needsProductSearch) {
-                // Only search products if query is product-related
-                relevantProducts = searchProducts(userMessage, 3); // Reduced from 5 to 3
+                relevantProducts = searchProducts(userMessage, 3);
             }
 
-            // Step 2: Build context from retrieved products (only if any found)
             String context = buildContext(relevantProducts);
 
-            // Step 3: Generate response with context
             String aiResponse;
             if (needsProductSearch && relevantProducts.isEmpty()) {
                 aiResponse = "Xin lỗi, tôi không tìm thấy sản phẩm phù hợp với yêu cầu của bạn. " +
@@ -103,7 +77,19 @@ public class ChatbotRAGServiceImpl implements ChatbotRAGService {
                         !relevantProducts.isEmpty());
             }
 
-            // Step 4: Build response
+            // Parse selected IDs and filter products
+            if (aiResponse.contains("SELECTED_IDS:")) {
+                List<Integer> selectedIds = extractSelectedIds(aiResponse);
+                if (!selectedIds.isEmpty()) {
+                    relevantProducts = relevantProducts.stream()
+                            .filter(p -> selectedIds.contains(p.getProductId()))
+                            .collect(Collectors.toList());
+                }
+
+                // Remove the technical tag from response
+                aiResponse = aiResponse.substring(0, aiResponse.indexOf("SELECTED_IDS:")).trim();
+            }
+
             ChatResponse response = new ChatResponse();
             response.setMessage(aiResponse);
             response.setProducts(relevantProducts);
@@ -113,19 +99,13 @@ public class ChatbotRAGServiceImpl implements ChatbotRAGService {
 
         } catch (Exception e) {
             log.error("Error generating RAG response: {}", e.getMessage(), e);
-
-            // Fallback response
             ChatResponse fallbackResponse = new ChatResponse();
-            fallbackResponse.setMessage(
-                    "Xin lỗi, hiện tại hệ thống đang gặp sự cố. Vui lòng thử lại sau hoặc liên hệ hỗ trợ.");
+            fallbackResponse.setMessage("Xin lỗi, hiện tại hệ thống đang gặp sự cố. Vui lòng thử lại sau.");
             fallbackResponse.setProducts(new ArrayList<>());
             return fallbackResponse;
         }
     }
 
-    /**
-     * Build context string from retrieved products.
-     */
     @Override
     public String buildContext(List<ProductInfo> products) {
         if (products.isEmpty()) {
@@ -137,7 +117,8 @@ public class ChatbotRAGServiceImpl implements ChatbotRAGService {
 
         for (int i = 0; i < products.size(); i++) {
             ProductInfo p = products.get(i);
-            context.append(String.format("%d. %s\n", i + 1, p.getName()));
+            // Important: Include ID so AI can select it
+            context.append(String.format("ID: %d | %s\n", p.getProductId(), p.getName()));
 
             if (p.getDescription() != null && !p.getDescription().isEmpty()) {
                 context.append("   Mô tả: ").append(p.getDescription()).append("\n");
@@ -157,45 +138,61 @@ public class ChatbotRAGServiceImpl implements ChatbotRAGService {
         return context.toString();
     }
 
-    /**
-     * Determine if query needs product search.
-     * Returns true for product-related queries, false for greetings/general
-     * questions.
-     */
     private boolean shouldSearchProducts(String userMessage) {
         String lowerMessage = userMessage.toLowerCase();
 
-        // Greetings and general conversation - no products needed
         if (lowerMessage.matches(".*\\b(xin chào|chào|hello|hi|hey|tạm biệt|bye|cảm ơn|thanks|được|ok|ừ)\\b.*")) {
             return false;
         }
 
-        // Questions about how chatbot works - no products
         if (lowerMessage.contains("bạn là ai") || lowerMessage.contains("làm gì") ||
                 lowerMessage.contains("giúp gì") || lowerMessage.contains("có thể")) {
             return false;
         }
 
-        // Product-related keywords
+        if (lowerMessage.matches(".*\\b(đẹp trai|xinh|ngầu|tốt|tệ)\\b.*")) {
+            return false;
+        }
+
         if (lowerMessage
                 .matches(".*\\b(tìm|mua|cần|muốn|có|bán|giá|sản phẩm|hàng|laptop|điện thoại|giày|áo|quần)\\b.*")) {
             return true;
         }
 
-        if (lowerMessage.matches(".*\\b(đẹp trai|xinh|ngầu|tốt|tệ)\\b.*")) {
-            return false; // Đây là câu hỏi về người dùng, không liên quan sản phẩm
-        }
-
-        // Default: search products (better to show than not show)
         return true;
     }
 
-    /**
-     * Convert ProductVector to ProductInfo DTO.
-     */
+    private List<Integer> extractSelectedIds(String aiResponse) {
+        List<Integer> ids = new ArrayList<>();
+        try {
+            if (aiResponse.contains("SELECTED_IDS:")) {
+                String idPart = aiResponse.substring(aiResponse.lastIndexOf("SELECTED_IDS:"));
+                String jsonArray = idPart.replace("SELECTED_IDS:", "").trim();
+                int start = jsonArray.indexOf("[");
+                int end = jsonArray.indexOf("]");
+
+                if (start >= 0 && end > start) {
+                    jsonArray = jsonArray.substring(start, end + 1);
+                    String[] parts = jsonArray.substring(1, jsonArray.length() - 1).split(",");
+                    for (String part : parts) {
+                        try {
+                            if (!part.trim().isEmpty()) {
+                                ids.add(Integer.parseInt(part.trim()));
+                            }
+                        } catch (NumberFormatException e) {
+                            // ignore invalid numbers
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error parsing selected IDs: {}", e.getMessage());
+        }
+        return ids;
+    }
+
     @Override
     public ProductInfo convertToProductInfo(ProductVector vector) {
-        // Try to get full product details from MySQL
         Product product = productRepository.findById(vector.getProductId()).orElse(null);
 
         ProductInfo info = new ProductInfo();
@@ -210,15 +207,13 @@ public class ChatbotRAGServiceImpl implements ChatbotRAGService {
             info.setSellerName(product.getSeller() != null &&
                     product.getSeller().getShopName() != null ? product.getSeller().getShopName() : null);
 
-            // Fetch and set product image
             List<Productmedia> mediaList = productmediaRepository
                     .findByProductIdAndDeletedAtIsNull(vector.getProductId());
             if (!mediaList.isEmpty()) {
-                // Get the first image (filter by media_type if needed)
                 Productmedia firstImage = mediaList.stream()
                         .filter(m -> "image".equalsIgnoreCase(m.getMediaType()))
                         .findFirst()
-                        .orElse(mediaList.get(0)); // Fallback to first media if no image found
+                        .orElse(mediaList.get(0));
                 info.setImageUrl(firstImage.getUrl());
             }
         }
@@ -226,9 +221,6 @@ public class ChatbotRAGServiceImpl implements ChatbotRAGService {
         return info;
     }
 
-    /**
-     * Convert double array to pgvector string format.
-     */
     @Override
     public String convertToVectorString(double[] embedding) {
         StringBuilder sb = new StringBuilder("[");
