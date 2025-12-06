@@ -19,7 +19,6 @@ public class ReviewController {
 
     private final ReviewService reviewService;
 
-    @PreAuthorize("hasAnyRole('SYSTEMADMIN', 'SELLER', 'BUYER')")
     @GetMapping("/products/{product_id}/reviews")
     public ResponseEntity<List<ReviewResponse>> getAllReviewsByProductId(
             @PathVariable("product_id") long productId) {
