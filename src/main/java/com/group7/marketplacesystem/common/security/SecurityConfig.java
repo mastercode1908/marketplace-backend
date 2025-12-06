@@ -61,6 +61,7 @@ public class SecurityConfig {
                         .hasAnyAuthority("ROLE_SYSTEMADMIN", "ROLE_CONTENTADMIN")
                         .requestMatchers("/api/seller/**").hasAuthority("ROLE_SELLER")
                         .requestMatchers("/api/buyer/**").hasAuthority("ROLE_BUYER")
+                        .requestMatchers("api/products/**").permitAll()
                         .requestMatchers("/api/product/**").permitAll()
                         .requestMatchers("/api/media/**").permitAll()
                         .requestMatchers("/api/category/**").permitAll()
