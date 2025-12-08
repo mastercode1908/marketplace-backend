@@ -28,7 +28,7 @@ public class ProductCreateRequest {
     private String description;
 
     @NotNull(message = "Giá sản phẩm không được để trống")
-    @DecimalMin(value = "1", message = "Giá sản phẩm phải lớn hơn 1000")
+    @DecimalMin(value = "1", message = "Giá sản phẩm phải lớn hơn 1")
     @DecimalMax(value = "1000000000", message = "Giá sản phẩm không được vượt quá 1 tỷ VNĐ")
     private BigDecimal price;
 
