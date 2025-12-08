@@ -38,6 +38,9 @@ public class SellerResponse {
         private String taxCode;
         private Integer rating_count;
         private Integer total_sales;
+        private Double rating;
+        private Integer positiveRatingPercentage;
+        private String joinDate;
     }
 }
 

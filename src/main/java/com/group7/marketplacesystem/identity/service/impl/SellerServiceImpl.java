@@ -16,12 +16,15 @@ import org.springframework.stereotype.Service;
 public class SellerServiceImpl implements SellerService {
     private final SellerRepository sellerRepository;
     private final SellerMapper sellerMapper;
+    private final com.group7.marketplacesystem.catalog.repository.ReviewRepository reviewRepository;
 
     @Override
     public SellerResponse getSellerProfile(Integer id) {
         Seller seller = sellerRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.SELLER_NOT_FOUND));
-        return sellerMapper.toSellerResponse(seller);
+        SellerResponse response = sellerMapper.toSellerResponse(seller);
+        enrichSellerResponse(response, seller);
+        return response;
     }
 
     @Override
@@ -39,7 +42,33 @@ public class SellerServiceImpl implements SellerService {
         seller.setShopAddress(validateAddressField(request.getShop_address(), ErrorCode.INVALID_ADDRESS));
         seller.setShopDescription(validateAddressField(request.getShop_description(), ErrorCode.INVALID_SHOP_DESCRIPTION));
         sellerRepository.save(seller);
-        return sellerMapper.toSellerResponse(seller);
+        SellerResponse response = sellerMapper.toSellerResponse(seller);
+        enrichSellerResponse(response, seller);
+        return response;
+    }
+
+    private void enrichSellerResponse(SellerResponse response, Seller seller) {
+        if (response.getSeller() == null) return;
+
+        // Calculate rating
+        Double avgRating = reviewRepository.getSellerAverageRating(seller.getId());
+        response.getSeller().setRating(avgRating != null ? Math.round(avgRating * 10.0) / 10.0 : 5.0);
+
+        // Calculate positive rating percentage
+        Integer totalReviews = reviewRepository.countBySellerId(seller.getId());
+        if (totalReviews != null && totalReviews > 0) {
+            long positiveReviews = reviewRepository.countBySellerIdAndRating(seller.getId(), 5) +
+                                   reviewRepository.countBySellerIdAndRating(seller.getId(), 4);
+            int percentage = (int) ((positiveReviews * 100) / totalReviews);
+            response.getSeller().setPositiveRatingPercentage(percentage);
+        } else {
+            response.getSeller().setPositiveRatingPercentage(100); // Default to 100% if no reviews
+        }
+
+        // Set join date
+        if (seller.getUsers().getCreatedAt() != null) {
+            response.getSeller().setJoinDate(seller.getUsers().getCreatedAt().toString());
+        }
     }
 
     public String validateFullName(String name, ErrorCode error) {
