@@ -17,11 +17,11 @@ import com.group7.marketplacesystem.identity.repository.BuyerRepository;
 import com.group7.marketplacesystem.identity.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Page;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -83,9 +83,49 @@ public class WishlistServiceImpl implements WishlistService {
         Buyer buyer = buyerRepository.findById(user.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.BUYER_NOT_FOUND));
 
-        Page<Wishlist> wishlists = wishlistRepository.findAllByBuyer(buyer, pageable);
+        // Lấy tất cả wishlist để kiểm tra và xóa các sản phẩm đã bị xóa
+        List<Wishlist> allWishlists = wishlistRepository.findAllByBuyer(buyer);
 
-        return wishlists.map(wishlistMapper::toResponse);
+        // Tự động xóa các sản phẩm đã bị xóa khỏi wishlist
+        List<Wishlist> wishlistsToDelete = new java.util.ArrayList<>();
+        for (Wishlist wishlist : allWishlists) {
+            Product product = wishlist.getProduct();
+            // Kiểm tra nếu sản phẩm đã bị xóa (deletedAt != null) hoặc không phải Approved
+            if (product == null || product.getDeletedAt() != null || 
+                !"Approved".equals(product.getProductStatus())) {
+                wishlistsToDelete.add(wishlist);
+            }
+        }
+        
+        // Xóa các wishlist item có sản phẩm đã bị xóa
+        if (!wishlistsToDelete.isEmpty()) {
+            wishlistRepository.deleteAll(wishlistsToDelete);
+            // Lấy lại danh sách sau khi xóa
+            allWishlists = wishlistRepository.findAllByBuyer(buyer);
+        }
+
+        // Lọc chỉ các sản phẩm hợp lệ
+        List<Wishlist> validWishlists = allWishlists.stream()
+                .filter(wishlist -> {
+                    Product product = wishlist.getProduct();
+                    return product != null && product.getDeletedAt() == null && 
+                           "Approved".equals(product.getProductStatus());
+                })
+                .collect(Collectors.toList());
+
+        // Phân trang lại sau khi lọc
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), validWishlists.size());
+        List<Wishlist> pagedWishlists = start < validWishlists.size() 
+                ? validWishlists.subList(start, end) 
+                : Collections.emptyList();
+
+        // Map sang response
+        List<WishlistResponse> responses = pagedWishlists.stream()
+                .map(wishlistMapper::toResponse)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, pageable, validWishlists.size());
     }
 
     @Override
@@ -115,7 +155,32 @@ public class WishlistServiceImpl implements WishlistService {
     @Override
     public List<WishlistResponse> searchWishlist(String text) {
         List<Wishlist> wishlists = wishlistRepository.searchByProductNameContaining(text);
+        
+        // Tự động xóa các sản phẩm đã bị xóa khỏi wishlist
+        List<Wishlist> wishlistsToDelete = new java.util.ArrayList<>();
+        for (Wishlist wishlist : wishlists) {
+            Product product = wishlist.getProduct();
+            // Kiểm tra nếu sản phẩm đã bị xóa (deletedAt != null) hoặc không phải Approved
+            if (product == null || product.getDeletedAt() != null || 
+                !"Approved".equals(product.getProductStatus())) {
+                wishlistsToDelete.add(wishlist);
+            }
+        }
+        
+        // Xóa các wishlist item có sản phẩm đã bị xóa
+        if (!wishlistsToDelete.isEmpty()) {
+            wishlistRepository.deleteAll(wishlistsToDelete);
+            // Lấy lại danh sách sau khi xóa
+            wishlists = wishlistRepository.searchByProductNameContaining(text);
+        }
+        
+        // Lọc và map chỉ các sản phẩm hợp lệ
         return wishlists.stream()
+                .filter(wishlist -> {
+                    Product product = wishlist.getProduct();
+                    return product != null && product.getDeletedAt() == null && 
+                           "Approved".equals(product.getProductStatus());
+                })
                 .map(wishlistMapper::toResponse)
                 .collect(Collectors.toList());
     }

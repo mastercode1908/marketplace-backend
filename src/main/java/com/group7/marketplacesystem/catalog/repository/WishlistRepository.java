@@ -15,6 +15,7 @@ import java.util.Optional;
 public interface WishlistRepository extends JpaRepository<Wishlist, WishlistId> {
     boolean existsById(WishlistId id);
     Page<Wishlist> findAllByBuyer(Buyer buyer, Pageable pageable);
+    List<Wishlist> findAllByBuyer(Buyer buyer);
     @Query("SELECT w FROM Wishlist w JOIN w.product p WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :text, '%'))")
     List<Wishlist> searchByProductNameContaining(@Param("text") String text);
 }

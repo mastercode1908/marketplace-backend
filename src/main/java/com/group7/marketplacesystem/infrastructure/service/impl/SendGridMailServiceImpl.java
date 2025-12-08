@@ -280,37 +280,45 @@ public class SendGridMailServiceImpl implements MailService {
         sendCustomEmail(toEmail, subject, content);
     }
 
+    @Async
     @Override
     public void sendOrderCancelledBySellerEmail(String toEmail, Integer orderId, String sellerName, String reason) {
-        String subject = "Thông báo: Đơn hàng #" + orderId + " đã bị hủy bởi người bán";
-        String orderLink = frontendUrl + "/user/orders/" + orderId;
-        String content = """
-                Xin chào,
+        log.info("Sending order cancellation email to {} for order #{}", toEmail, orderId);
+        try {
+            String subject = "Thông báo: Đơn hàng #" + orderId + " đã bị hủy bởi người bán";
+            String orderLink = frontendUrl + "/user/orders/" + orderId;
+            String content = """
+                    Xin chào,
 
-                Chúng tôi rất tiếc phải thông báo rằng đơn hàng #%d của bạn đã bị hủy bởi người bán.
+                    Chúng tôi rất tiếc phải thông báo rằng đơn hàng #%d của bạn đã bị hủy bởi người bán.
 
-                Th\u00f4ng tin đơn hàng:
-                - Mã đơn hàng: #%d
-                - Người bán: %s
-                - Lý do hủy đơn: %s
+                    Th\u00f4ng tin đơn hàng:
+                    - Mã đơn hàng: #%d
+                    - Người bán: %s
+                    - Lý do hủy đơn: %s
 
-                Nếu bạn đã thanh toán, số tiền sẽ được hoàn trả vào tài khoản của bạn trong vòng 3-5 ngày làm việc.
+                    Nếu bạn đã thanh toán, số tiền sẽ được hoàn trả vào tài khoản của bạn trong vòng 3-5 ngày làm việc.
 
-                Bạn có thể xem chi tiết đơn hàng tại:
-                %s
+                    Bạn có thể xem chi tiết đơn hàng tại:
+                    %s
 
-                Nếu bạn có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.
+                    Nếu bạn có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.
 
-                Trân trọng,
-                Đội ngũ Online MarketPlace
-                """.formatted(
-                orderId,
-                orderId,
-                sellerName != null ? sellerName : "Người bán",
-                reason != null && !reason.trim().isEmpty() ? reason : "Không có lý do cụ thể",
-                orderLink);
+                    Trân trọng,
+                    Đội ngũ Online MarketPlace
+                    """.formatted(
+                    orderId,
+                    orderId,
+                    sellerName != null ? sellerName : "Người bán",
+                    reason != null && !reason.trim().isEmpty() ? reason : "Không có lý do cụ thể",
+                    orderLink);
 
-        sendCustomEmail(toEmail, subject, content);
+            sendCustomEmail(toEmail, subject, content);
+            log.info("Order cancellation email sent successfully to {} for order #{}", toEmail, orderId);
+        } catch (Exception e) {
+            log.error("Error sending order cancellation email to {} for order #{}: {}", toEmail, orderId, e.getMessage(), e);
+            // Không throw exception để không ảnh hưởng đến việc hủy đơn
+        }
     }
 
     @Async
