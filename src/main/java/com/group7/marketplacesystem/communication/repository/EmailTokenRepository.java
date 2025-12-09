@@ -16,4 +16,8 @@ public interface EmailTokenRepository extends JpaRepository<EmailToken, Integer>
     @Modifying
     @Query("DELETE FROM EmailToken e WHERE e.token = :token")
     void deleteByToken(@Param("token") String token);
+
+    @Modifying
+    @Query("DELETE FROM EmailToken e WHERE e.entityId = :entityId AND e.type = :type")
+    void deleteByEntityIdAndType(@Param("entityId") Integer entityId, @Param("type") String type);
 }

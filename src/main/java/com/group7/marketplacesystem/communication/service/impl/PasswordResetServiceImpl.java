@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -33,6 +34,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
     @Override
     @Async // <-- Bất đồng bộ
+    @Transactional // Đảm bảo xóa token cũ và tạo token mới trong cùng một transaction
     public void createAndSendResetPasswordToken(String userEmail) {
         Optional<User> userOpt = userRepository.findByEmail(userEmail);
         if (userOpt.isEmpty()) return;
@@ -41,6 +43,10 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         if(userOpt.get().getDeletedAt() != null) return;
 
         User user = userOpt.get();
+        
+        // Xóa tất cả token RESET cũ của user này để đảm bảo chỉ token mới nhất còn hiệu lực
+        emailTokenRepository.deleteByEntityIdAndType(user.getId(), "RESET");
+        
         String token = UUID.randomUUID().toString();
         Instant expiry = Instant.now().plus(15, ChronoUnit.MINUTES);
 
