@@ -86,13 +86,24 @@ public class WishlistServiceImpl implements WishlistService {
         // Lấy tất cả wishlist để kiểm tra và xóa các sản phẩm đã bị xóa
         List<Wishlist> allWishlists = wishlistRepository.findAllByBuyer(buyer);
 
-        // Tự động xóa các sản phẩm đã bị xóa khỏi wishlist
+// Tự động xóa các sản phẩm đã bị xóa hoặc seller không active khỏi wishlist
         List<Wishlist> wishlistsToDelete = new java.util.ArrayList<>();
         for (Wishlist wishlist : allWishlists) {
             Product product = wishlist.getProduct();
             // Kiểm tra nếu sản phẩm đã bị xóa (deletedAt != null) hoặc không phải Approved
-            if (product == null || product.getDeletedAt() != null || 
-                !"Approved".equals(product.getProductStatus())) {
+            if (product == null || product.getDeletedAt() != null ||
+                    !"Approved".equals(product.getProductStatus())) {
+                wishlistsToDelete.add(wishlist);
+                continue;
+            }
+            // Kiểm tra seller status
+            if (product.getSeller() == null || product.getSeller().getUsers() == null) {
+                wishlistsToDelete.add(wishlist);
+                continue;
+            }
+            User sellerUser = product.getSeller().getUsers();
+            if (!"Active".equalsIgnoreCase(sellerUser.getUserStatus()) ||
+                    sellerUser.getDeletedAt() != null) {
                 wishlistsToDelete.add(wishlist);
             }
         }
@@ -104,12 +115,21 @@ public class WishlistServiceImpl implements WishlistService {
             allWishlists = wishlistRepository.findAllByBuyer(buyer);
         }
 
-        // Lọc chỉ các sản phẩm hợp lệ
+// Lọc chỉ các sản phẩm hợp lệ (đã approved, chưa bị xóa, và seller active)
         List<Wishlist> validWishlists = allWishlists.stream()
                 .filter(wishlist -> {
                     Product product = wishlist.getProduct();
-                    return product != null && product.getDeletedAt() == null && 
-                           "Approved".equals(product.getProductStatus());
+                    if (product == null || product.getDeletedAt() != null ||
+                            !"Approved".equals(product.getProductStatus())) {
+                        return false;
+                    }
+                    // Kiểm tra seller status
+                    if (product.getSeller() == null || product.getSeller().getUsers() == null) {
+                        return false;
+                    }
+                    User sellerUser = product.getSeller().getUsers();
+                    return "Active".equalsIgnoreCase(sellerUser.getUserStatus()) &&
+                            sellerUser.getDeletedAt() == null;
                 })
                 .collect(Collectors.toList());
 
@@ -155,14 +175,25 @@ public class WishlistServiceImpl implements WishlistService {
     @Override
     public List<WishlistResponse> searchWishlist(String text) {
         List<Wishlist> wishlists = wishlistRepository.searchByProductNameContaining(text);
-        
-        // Tự động xóa các sản phẩm đã bị xóa khỏi wishlist
+
+// Tự động xóa các sản phẩm đã bị xóa hoặc seller không active khỏi wishlist
         List<Wishlist> wishlistsToDelete = new java.util.ArrayList<>();
         for (Wishlist wishlist : wishlists) {
             Product product = wishlist.getProduct();
             // Kiểm tra nếu sản phẩm đã bị xóa (deletedAt != null) hoặc không phải Approved
-            if (product == null || product.getDeletedAt() != null || 
-                !"Approved".equals(product.getProductStatus())) {
+            if (product == null || product.getDeletedAt() != null ||
+                    !"Approved".equals(product.getProductStatus())) {
+                wishlistsToDelete.add(wishlist);
+                continue;
+            }
+            // Kiểm tra seller status
+            if (product.getSeller() == null || product.getSeller().getUsers() == null) {
+                wishlistsToDelete.add(wishlist);
+                continue;
+            }
+            User sellerUser = product.getSeller().getUsers();
+            if (!"Active".equalsIgnoreCase(sellerUser.getUserStatus()) ||
+                    sellerUser.getDeletedAt() != null) {
                 wishlistsToDelete.add(wishlist);
             }
         }
@@ -173,13 +204,22 @@ public class WishlistServiceImpl implements WishlistService {
             // Lấy lại danh sách sau khi xóa
             wishlists = wishlistRepository.searchByProductNameContaining(text);
         }
-        
-        // Lọc và map chỉ các sản phẩm hợp lệ
+
+// Lọc và map chỉ các sản phẩm hợp lệ (đã approved, chưa bị xóa, và seller active)
         return wishlists.stream()
                 .filter(wishlist -> {
                     Product product = wishlist.getProduct();
-                    return product != null && product.getDeletedAt() == null && 
-                           "Approved".equals(product.getProductStatus());
+                    if (product == null || product.getDeletedAt() != null ||
+                            !"Approved".equals(product.getProductStatus())) {
+                        return false;
+                    }
+                    // Kiểm tra seller status
+                    if (product.getSeller() == null || product.getSeller().getUsers() == null) {
+                        return false;
+                    }
+                    User sellerUser = product.getSeller().getUsers();
+                    return "Active".equalsIgnoreCase(sellerUser.getUserStatus()) &&
+                            sellerUser.getDeletedAt() == null;
                 })
                 .map(wishlistMapper::toResponse)
                 .collect(Collectors.toList());

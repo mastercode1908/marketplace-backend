@@ -19,6 +19,7 @@ import com.group7.marketplacesystem.common.exception.ApiException;
 import com.group7.marketplacesystem.common.exception.ErrorCode;
 import com.group7.marketplacesystem.common.security.CurrentUser;
 import com.group7.marketplacesystem.identity.entity.Seller;
+import com.group7.marketplacesystem.identity.entity.User;
 import com.group7.marketplacesystem.identity.repository.SellerRepository;
 import com.group7.marketplacesystem.infrastructure.service.MailService;
 import com.group7.marketplacesystem.promotion.entity.PackageUsage;
@@ -60,6 +61,21 @@ public class ProductServiceImpl implements ProductService {
     private final MailService mailService;
     private final OrderDetailRepository orderDetailRepository;
 
+    /**
+     * Kiểm tra xem seller có active không
+     * @param seller Seller entity
+     * @return true nếu seller active, false nếu không
+     */
+    private boolean isSellerActive(Seller seller) {
+        if (seller == null || seller.getUsers() == null) {
+            return false;
+        }
+        User user = seller.getUsers();
+        return "Active".equalsIgnoreCase(user.getUserStatus()) && user.getDeletedAt() == null;
+    }
+
+
+
     @Override
     public ProductInfoResponse createProduct(ProductCreateRequest request) {
         // Lấy seller từ security context
@@ -95,6 +111,11 @@ public class ProductServiceImpl implements ProductService {
     public ProductInfoResponse getProductById(Integer productId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ApiException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        // Kiểm tra seller status - chỉ trả về sản phẩm nếu seller active
+        if (!isSellerActive(product.getSeller())) {
+            throw new ApiException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
 
         // Lấy media
         List<Productmedia> mediaList = productMediaRepository.findByProductIdAndDeletedAtIsNull(productId);
@@ -220,12 +241,15 @@ public class ProductServiceImpl implements ProductService {
     public List<ProductInfoResponse> getAllProducts() {
         List<Product> products = productRepository.findAllByDeletedAtIsNullOrderByIdDesc();
 
-        return products.stream().map(p -> {
-            List<Productmedia> mediaList = productMediaRepository.findByProductIdAndDeletedAtIsNull(p.getId());
-            Long soldQuantityLong = orderDetailRepository.getSoldQuantityByProductId(p.getId());
-            Integer soldQuantity = soldQuantityLong != null ? soldQuantityLong.intValue() : 0;
-            return ProductMapper.toResponse(p, mediaList, soldQuantity);
-        }).toList();
+        // Lọc chỉ sản phẩm của seller active
+        return products.stream()
+                .filter(p -> isSellerActive(p.getSeller()))
+                .map(p -> {
+                    List<Productmedia> mediaList = productMediaRepository.findByProductIdAndDeletedAtIsNull(p.getId());
+                    Long soldQuantityLong = orderDetailRepository.getSoldQuantityByProductId(p.getId());
+                    Integer soldQuantity = soldQuantityLong != null ? soldQuantityLong.intValue() : 0;
+                    return ProductMapper.toResponse(p, mediaList, soldQuantity);
+                }).toList();
     }
 
     @Override
@@ -301,8 +325,11 @@ public class ProductServiceImpl implements ProductService {
 
         Optional<Servicepackage> optionalServicePackage = servicePackageRepository.findByIdAndDeletedAtIsNull(2);
         Servicepackage servicePackage = optionalServicePackage.orElse(new Servicepackage());
-        // 1. Lấy tất cả sản phẩm còn active (deletedAt IS NULL)
-        List<Product> allProducts = productRepository.findAllByDeletedAtIsNull();
+
+        // 1. Lấy tất cả sản phẩm còn active (deletedAt IS NULL) và seller active
+        List<Product> allProducts = productRepository.findAllByDeletedAtIsNull().stream()
+                .filter(p -> isSellerActive(p.getSeller()))
+                .collect(Collectors.toList());
 
         // 2. Lấy danh sách productIds từ package usage của sellerpackage Active
         Optional<Servicepackage> optionalServicePackage1 = servicePackageRepository.findByIdAndDeletedAtIsNull(3);
@@ -365,7 +392,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Page<ProductInfoResponse> getAllProductsOfShopHasServicePackage(Pageable pageable) {
-        List<Product> allProducts = productRepository.findAllByDeletedAtIsNull();
+        // Lọc chỉ sản phẩm của seller active
+        List<Product> allProducts = productRepository.findAllByDeletedAtIsNull().stream()
+                .filter(p -> isSellerActive(p.getSeller()))
+                .collect(Collectors.toList());
         Optional<Servicepackage> optionalServicePackage = servicePackageRepository.findByIdAndDeletedAtIsNull(2);
         Servicepackage servicePackage = optionalServicePackage.orElse(new Servicepackage());
         List<Sellerpackage> sellerpackages = sellerPackageRepository.findAllSellersByPackageField(servicePackage);
@@ -394,6 +424,12 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<ProductInfoResponse> getProductsBySellerId(Integer sellerId) {
+
+        // Kiểm tra seller có active không
+        Seller seller = sellerRepository.findById(sellerId).orElse(null);
+        if (seller == null || !isSellerActive(seller)) {
+            return new ArrayList<>(); // Trả về danh sách rỗng nếu seller không active
+        }
         List<Product> products = productRepository.findBySellerIdAndDeletedAtIsNullAndProductStatusOrderByIdDesc(sellerId, "Approved");
 
         return products.stream().map(p -> {
@@ -443,9 +479,10 @@ public class ProductServiceImpl implements ProductService {
         // 5. Randomize order
         Collections.shuffle(products);
 
-        // 6. Map to response
+// 6. Map to response - lọc chỉ sản phẩm của seller active
         return products.stream()
                 .filter(p -> p.getDeletedAt() == null && "Approved".equals(p.getProductStatus()))
+                .filter(p -> isSellerActive(p.getSeller()))
                 .map(p -> {
                     List<Productmedia> mediaList = productMediaRepository.findByProductIdAndDeletedAtIsNull(p.getId());
                     Long soldQuantityLong = orderDetailRepository.getSoldQuantityByProductId(p.getId());
