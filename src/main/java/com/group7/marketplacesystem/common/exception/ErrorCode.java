@@ -97,6 +97,7 @@ public enum ErrorCode {
     PASSWORD_NO_SPECIAL(5003, "Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt (@$!%*?&)", HttpStatus.BAD_REQUEST),
     PASSWORD_NOT_MATCH(5004, "Mật khẩu xác nhận không khớp", HttpStatus.BAD_REQUEST),
     INCORRECT_PASSWORD(5005, "Mật khẩu hiện tại không đúng", HttpStatus.BAD_REQUEST),
+    PASSWORD_SAME_AS_OLD(5006, "Mật khẩu mới không được trùng với mật khẩu cũ", HttpStatus.BAD_REQUEST),
 
 
     //Login

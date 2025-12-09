@@ -141,6 +141,11 @@ public class AuthServiceImpl implements AuthService {
             throw new ApiException(ErrorCode.PASSWORD_NOT_MATCH);
         }
 
+        // Kiểm tra mật khẩu mới không được trùng với mật khẩu cũ
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new ApiException(ErrorCode.PASSWORD_SAME_AS_OLD);
+        }
+
         // Update password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
