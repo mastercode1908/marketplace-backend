@@ -20,6 +20,7 @@ import java.util.List;
 public class CategoryController {
     private final CategoryService categoryService;
 
+
     @PreAuthorize("hasAnyRole('SYSTEMADMIN', 'CONTENTADMIN')")
     @GetMapping
     public ResponseEntity<List<CategoryResponse>>getAllCategory(
